@@ -11,6 +11,21 @@ Gestisci la scaletta, lancia le basi e tieni il tempo — tutto da un'unica app,
 
 ---
 
+## 📸 Screenshot
+
+<div align="center">
+
+<!-- Inserisci qui lo screenshot dell'app:
+     1. Salva l'immagine in docs/screenshot.png
+     2. Decommenta la riga sotto -->
+<!-- ![SetlistPlayer in azione](docs/screenshot.png) -->
+
+*Screenshot in arrivo.*
+
+</div>
+
+---
+
 ## Perché SetlistPlayer
 
 Prima di salire sul palco hai una scaletta, le basi audio di ogni brano e un BPM da rispettare.
