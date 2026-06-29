@@ -492,10 +492,68 @@ void MainComponent::cmdAbout()
 // ============================================================
 // Audio Setup window
 // ============================================================
+//
+// Holds the audio device selector with the metronome output controls
+// docked in a section right below it. The metronome panel is owned by
+// MainComponent (it keeps the MIDI device open while this window is
+// closed), so it is added as a non-owned child and detached on teardown.
+class AudioSetupContent : public juce::Component
+{
+public:
+    AudioSetupContent(juce::AudioDeviceManager& dm, MetronomeOutputPanel& metroOut)
+        : metronomeOutput(metroOut)
+    {
+        // AudioDeviceSelectorComponent(deviceManager,
+        //   minInputChannels, maxInputChannels,
+        //   minOutputChannels, maxOutputChannels,
+        //   showMidiInputOptions, showMidiOutputSelector,
+        //   showChannelsAsStereoPairs, hideAdvancedOptionsWithButton)
+        selector.reset(new juce::AudioDeviceSelectorComponent(
+            dm,
+            0, 0,       // no inputs needed
+            2, 2,       // stereo output
+            false,      // no MIDI input list (handled separately)
+            false,      // no MIDI output list
+            true,       // show stereo pairs
+            false));    // show all options immediately
+        addAndMakeVisible(selector.get());
+
+        addAndMakeVisible(metronomeOutput);  // not owned — lives in MainComponent
+
+        setSize(500, selectorHeight + gap + MetronomeOutputPanel::preferredHeight);
+    }
+
+    ~AudioSetupContent() override
+    {
+        // Detach the shared panel so it survives this window being deleted.
+        removeChildComponent(&metronomeOutput);
+    }
+
+    void resized() override
+    {
+        auto area = getLocalBounds();
+        // Audio device selector docked at the top at its natural height,
+        // metronome controls immediately below it (no stretched gap).
+        selector->setBounds(area.removeFromTop(selectorHeight));
+        area.removeFromTop(gap);
+        metronomeOutput.setBounds(area.reduced(12, 0));
+    }
+
+private:
+    // Output-only selector needs ~3 rows (output / sample rate / buffer).
+    static constexpr int selectorHeight = 150;
+    static constexpr int gap            = 8;
+
+    std::unique_ptr<juce::AudioDeviceSelectorComponent> selector;
+    MetronomeOutputPanel& metronomeOutput;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioSetupContent)
+};
+
 class AudioSetupWindow : public juce::DocumentWindow
 {
 public:
-    AudioSetupWindow(juce::AudioDeviceManager& dm)
+    AudioSetupWindow(juce::AudioDeviceManager& dm, MetronomeOutputPanel& metroOut)
         : DocumentWindow("Audio Setup",
                          juce::Colour(0xFF0F0F1A),
                          DocumentWindow::closeButton)
@@ -503,24 +561,10 @@ public:
         setUsingNativeTitleBar(true);
         setResizable(true, false);
 
-        // AudioDeviceSelectorComponent(deviceManager,
-        //   minInputChannels, maxInputChannels,
-        //   minOutputChannels, maxOutputChannels,
-        //   showMidiInputOptions, showMidiOutputSelector,
-        //   showChannelsAsStereoPairs, hideAdvancedOptionsWithButton)
-        auto* selector = new juce::AudioDeviceSelectorComponent(
-            dm,
-            0, 0,       // no inputs needed
-            2, 2,       // stereo output
-            false,      // no MIDI input list (handled separately)
-            false,      // no MIDI output list
-            true,       // show stereo pairs
-            false);     // show all options immediately
-
-        selector->setSize(500, 400);
-        setContentOwned(selector, true);
-        centreWithSize(getContentComponent()->getWidth()  + 8,
-                       getContentComponent()->getHeight() + getTitleBarHeight() + 8);
+        auto* content = new AudioSetupContent(dm, metroOut);
+        setContentOwned(content, true);
+        centreWithSize(content->getWidth()  + 8,
+                       content->getHeight() + getTitleBarHeight() + 8);
         setVisible(true);
     }
 
@@ -532,5 +576,5 @@ private:
 
 void MainComponent::cmdAudioSetup()
 {
-    new AudioSetupWindow(deviceManager);  // self-deleting on close
+    new AudioSetupWindow(deviceManager, metronomeOutput);  // self-deleting on close
 }

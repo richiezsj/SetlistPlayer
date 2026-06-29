@@ -7,6 +7,7 @@
 #include "SetlistPanel.h"
 #include "SongEditorPanel.h"
 #include "TransportPanel.h"
+#include "MetronomeOutputPanel.h"
 
 class MainComponent : public juce::Component,
                       public juce::MenuBarModel,
@@ -84,6 +85,12 @@ private:
     juce::AudioDeviceManager deviceManager;
     MetronomeEngine           metronome;
     AudioPlayerEngine         audioPlayer;
+
+    // Long-lived metronome output controls (mode / MIDI device / notes).
+    // Owns the open MidiOutput, so it must outlive the Audio Setup window
+    // where it is shown. Declared after `metronome` so it is destroyed
+    // before the engine it references.
+    MetronomeOutputPanel      metronomeOutput { metronome };
 
     // Simple mixer: sums metronome + audio player.
     // Pre-allocates its temp buffer in prepareToPlay so the

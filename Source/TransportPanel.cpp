@@ -65,95 +65,9 @@ TransportPanel::TransportPanel(MetronomeEngine& metro, AudioPlayerEngine& player
     addAndMakeVisible(metroStrip);
 
     // -----------------------------------------------------------------------
-    // MIDI metronome controls
+    // Beat callback
+    // (Metronome output configuration now lives in the Audio Setup window.)
     // -----------------------------------------------------------------------
-    midiSectionLabel.setText("METRONOME OUTPUT", juce::dontSendNotification);
-    midiSectionLabel.setFont(juce::Font(10.0f).boldened());
-    midiSectionLabel.setColour(juce::Label::textColourId, juce::Colour(0xFF778899));
-    midiSectionLabel.setJustificationType(juce::Justification::centredLeft);
-    addAndMakeVisible(midiSectionLabel);
-
-    midiModeLabel.setText("Mode:", juce::dontSendNotification);
-    midiModeLabel.setFont(juce::Font(11.0f));
-    midiModeLabel.setColour(juce::Label::textColourId, juce::Colour(0xFF8899AA));
-    addAndMakeVisible(midiModeLabel);
-
-    midiModeBox.addItem("Internal click", 1);
-    midiModeBox.addItem("MIDI out only",  2);
-    midiModeBox.addItem("Internal + MIDI", 3);
-    midiModeBox.setSelectedId(1, juce::dontSendNotification);
-    midiModeBox.setColour(juce::ComboBox::backgroundColourId, juce::Colour(0xFF2A2A3A));
-    midiModeBox.setColour(juce::ComboBox::textColourId,       juce::Colours::white);
-    midiModeBox.onChange = [this] { applyMidiMode(); };
-    addAndMakeVisible(midiModeBox);
-
-    midiDeviceLabel.setText("MIDI device:", juce::dontSendNotification);
-    midiDeviceLabel.setFont(juce::Font(11.0f));
-    midiDeviceLabel.setColour(juce::Label::textColourId, juce::Colour(0xFF8899AA));
-    addAndMakeVisible(midiDeviceLabel);
-
-    midiDeviceBox.setColour(juce::ComboBox::backgroundColourId, juce::Colour(0xFF2A2A3A));
-    midiDeviceBox.setColour(juce::ComboBox::textColourId,       juce::Colours::white);
-    midiDeviceBox.onChange = [this] { applyMidiMode(); };
-    addAndMakeVisible(midiDeviceBox);
-
-    refreshMidiDevices();
-
-    // -----------------------------------------------------------------------
-    // MIDI note & channel controls
-    // -----------------------------------------------------------------------
-    auto setupNoteSlider = [this](juce::Slider& s, juce::Label& lbl,
-                                  const juce::String& text, int defaultVal,
-                                  std::function<void(int)> onChange)
-    {
-        lbl.setText(text, juce::dontSendNotification);
-        lbl.setFont(juce::Font(10.0f));
-        lbl.setColour(juce::Label::textColourId, juce::Colour(0xFF8899AA));
-        addAndMakeVisible(lbl);
-
-        s.setSliderStyle(juce::Slider::IncDecButtons);
-        s.setTextBoxStyle(juce::Slider::TextBoxLeft, false, 52, 20);
-        s.setRange(0, 127, 1);
-        s.setValue(defaultVal, juce::dontSendNotification);
-        s.setColour(juce::Slider::textBoxTextColourId,       juce::Colours::white);
-        s.setColour(juce::Slider::textBoxBackgroundColourId, juce::Colour(0xFF1A1A2E));
-        s.setColour(juce::Slider::textBoxOutlineColourId,    juce::Colour(0xFF334455));
-        s.onValueChange = [this, &s, onChange]
-        {
-            int val = (int)s.getValue();
-            onChange(val);
-            // Show note name in tooltip
-            s.setTooltip(noteNumberToName(val));
-        };
-        s.setTooltip(noteNumberToName(defaultVal));
-        addAndMakeVisible(s);
-    };
-
-    setupNoteSlider(midiNoteDownSlider, midiNoteDownLabel, "Downbeat:",
-                    metronome.getMidiNoteDown(),
-                    [this](int n){ metronome.setMidiNoteDown(n); });
-
-    setupNoteSlider(midiNoteBeatSlider, midiNoteBeatLabel, "Beat:",
-                    metronome.getMidiNoteBeat(),
-                    [this](int n){ metronome.setMidiNoteBeat(n); });
-
-    midiChannelLabel.setText("Ch:", juce::dontSendNotification);
-    midiChannelLabel.setFont(juce::Font(10.0f));
-    midiChannelLabel.setColour(juce::Label::textColourId, juce::Colour(0xFF8899AA));
-    addAndMakeVisible(midiChannelLabel);
-
-    midiChannelSlider.setSliderStyle(juce::Slider::IncDecButtons);
-    midiChannelSlider.setTextBoxStyle(juce::Slider::TextBoxLeft, false, 34, 20);
-    midiChannelSlider.setRange(1, 16, 1);
-    midiChannelSlider.setValue(metronome.getMidiChannel(), juce::dontSendNotification);
-    midiChannelSlider.setColour(juce::Slider::textBoxTextColourId,       juce::Colours::white);
-    midiChannelSlider.setColour(juce::Slider::textBoxBackgroundColourId, juce::Colour(0xFF1A1A2E));
-    midiChannelSlider.setColour(juce::Slider::textBoxOutlineColourId,    juce::Colour(0xFF334455));
-    midiChannelSlider.onValueChange = [this]
-    {
-        metronome.setMidiChannel((int)midiChannelSlider.getValue());
-    };
-    addAndMakeVisible(midiChannelSlider);
     metronome.onBeat = [this](int beat, int bar)
     {
         currentBeat = beat;
@@ -169,71 +83,6 @@ TransportPanel::~TransportPanel()
 {
     metronome.onBeat = nullptr;
     stopTimer();
-    metronome.setMidiOutput(nullptr);
-    metronome.setUseMidi(false);
-    midiOutput.reset();
-}
-
-void TransportPanel::refreshMidiDevices()
-{
-    auto devices = juce::MidiOutput::getAvailableDevices();
-    midiDeviceBox.clear(juce::dontSendNotification);
-
-    if (devices.isEmpty())
-    {
-        midiDeviceBox.addItem("(no MIDI outputs)", 1);
-        midiDeviceBox.setSelectedId(1, juce::dontSendNotification);
-        midiDeviceBox.setEnabled(false);
-    }
-    else
-    {
-        for (int i = 0; i < devices.size(); ++i)
-            midiDeviceBox.addItem(devices[i].name, i + 1);
-        midiDeviceBox.setSelectedId(1, juce::dontSendNotification);
-        midiDeviceBox.setEnabled(midiModeBox.getSelectedId() != 1);
-    }
-}
-
-void TransportPanel::applyMidiMode()
-{
-    int mode = midiModeBox.getSelectedId();  // 1=internal, 2=MIDI only, 3=both
-
-    // Enable/disable device selector
-    bool needsMidi = (mode == 2 || mode == 3);
-    midiDeviceBox.setEnabled(needsMidi && midiDeviceBox.getNumItems() > 0
-                             && midiDeviceBox.getItemText(0) != "(no MIDI outputs)");
-
-    metronome.setUseInternal(mode != 2);   // internal off only in MIDI-only mode
-    metronome.setUseMidi(needsMidi);
-
-    if (needsMidi)
-    {
-        auto devices = juce::MidiOutput::getAvailableDevices();
-        int idx = midiDeviceBox.getSelectedId() - 1;
-        if (idx >= 0 && idx < devices.size())
-        {
-            midiOutput = juce::MidiOutput::openDevice(devices[idx].identifier);
-            metronome.setMidiOutput(midiOutput.get());
-        }
-        else
-        {
-            midiOutput.reset();
-            metronome.setMidiOutput(nullptr);
-        }
-    }
-    else
-    {
-        metronome.setMidiOutput(nullptr);
-        midiOutput.reset();
-    }
-}
-
-juce::String TransportPanel::noteNumberToName(int n)
-{
-    static const char* names[] = { "C","C#","D","D#","E","F","F#","G","G#","A","A#","B" };
-    int octave = (n / 12) - 1;
-    return juce::String(names[n % 12]) + juce::String(octave)
-         + "  (" + juce::String(n) + ")";
 }
 
 void TransportPanel::timerCallback()
@@ -279,13 +128,6 @@ void TransportPanel::paint(juce::Graphics& g)
     g.setColour(juce::Colour(0xFF334455));
     g.drawLine((float)(getWidth() - stripW * 2 - 12), 8.0f,
                (float)(getWidth() - stripW * 2 - 12), (float)(getHeight() - 8), 1.0f);
-
-    // MIDI section label separator
-    if (midiSectionLabel.getY() > 0)
-    {
-        g.setColour(juce::Colour(0xFF2A3A4A));
-        g.fillRect(8, midiSectionLabel.getY() - 6, getWidth() - stripW * 2 - 24, 1);
-    }
 }
 
 void TransportPanel::drawBeatIndicators(juce::Graphics& g, juce::Rectangle<int> area)
@@ -348,37 +190,6 @@ void TransportPanel::resized()
     playButton.setBounds(btnRow.removeFromLeft(bw).reduced(4, 0));
     stopButton.setBounds(btnRow.removeFromLeft(bw).reduced(4, 0));
     nextButton.setBounds(btnRow.reduced(4, 0));
-
-    // MIDI section below transport buttons
-    area.removeFromTop(10);
-    midiSectionLabel.setBounds(area.removeFromTop(16));
-    area.removeFromTop(4);
-
-    auto midiModeRow = area.removeFromTop(22);
-    midiModeLabel.setBounds(midiModeRow.removeFromLeft(44));
-    midiModeBox.setBounds(midiModeRow);
-
-    area.removeFromTop(4);
-    auto midiDevRow = area.removeFromTop(22);
-    midiDeviceLabel.setBounds(midiDevRow.removeFromLeft(44));
-    midiDeviceBox.setBounds(midiDevRow);
-
-    // Note & channel controls (visible only when MIDI is involved)
-    bool midiActive = (midiModeBox.getSelectedId() != 1);
-    area.removeFromTop(6);
-    auto chRow = area.removeFromTop(20);
-    midiChannelLabel.setBounds(chRow.removeFromLeft(22));
-    midiChannelSlider.setBounds(chRow);
-
-    area.removeFromTop(4);
-    auto downRow = area.removeFromTop(20);
-    midiNoteDownLabel.setBounds(downRow.removeFromLeft(56));
-    midiNoteDownSlider.setBounds(downRow);
-
-    area.removeFromTop(4);
-    auto beatRow = area.removeFromTop(20);
-    midiNoteBeatLabel.setBounds(beatRow.removeFromLeft(56));
-    midiNoteBeatSlider.setBounds(beatRow);
 }
 
 void TransportPanel::loadSong(const Song* song)

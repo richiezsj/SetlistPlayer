@@ -32,6 +32,8 @@
       <FILE id="file12" name="SongEditorPanel.cpp"  compile="1" resource="0" file="Source/SongEditorPanel.cpp"/>
       <FILE id="file13" name="TransportPanel.h"     compile="0" resource="0" file="Source/TransportPanel.h"/>
       <FILE id="file14" name="TransportPanel.cpp"   compile="1" resource="0" file="Source/TransportPanel.cpp"/>
+      <FILE id="file15" name="MetronomeOutputPanel.h"   compile="0" resource="0" file="Source/MetronomeOutputPanel.h"/>
+      <FILE id="file16" name="MetronomeOutputPanel.cpp" compile="1" resource="0" file="Source/MetronomeOutputPanel.cpp"/>
     </GROUP>
   </MAINGROUP>
 

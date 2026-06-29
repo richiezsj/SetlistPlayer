@@ -305,23 +305,6 @@ private:
     juce::TextButton playButton, stopButton, nextButton;
     juce::Label      songNameLabel, bpmDisplayLabel, positionLabel, statusLabel;
 
-    // MIDI metronome controls
-    juce::Label    midiSectionLabel;
-    juce::ComboBox midiModeBox;
-    juce::ComboBox midiDeviceBox;
-    juce::Label    midiModeLabel;
-    juce::Label    midiDeviceLabel;
-
-    // MIDI note & channel controls
-    juce::Label    midiChannelLabel, midiNoteDownLabel, midiNoteBeatLabel;
-    juce::Slider   midiChannelSlider, midiNoteDownSlider, midiNoteBeatSlider;
-
-    std::unique_ptr<juce::MidiOutput> midiOutput;
-
-    void refreshMidiDevices();
-    void applyMidiMode();
-    static juce::String noteNumberToName(int n);  // e.g. 41 -> "F2"
-
     int currentBeat = 0;
     int currentBar  = 0;
 

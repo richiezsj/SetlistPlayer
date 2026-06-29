@@ -31,6 +31,10 @@
           file="Source/TransportPanel.cpp"/>
     <FILE id="YmyZ19" name="TransportPanel.h" compile="0" resource="0"
           file="Source/TransportPanel.h"/>
+    <FILE id="MoPnl1" name="MetronomeOutputPanel.cpp" compile="1" resource="0"
+          file="Source/MetronomeOutputPanel.cpp"/>
+    <FILE id="MoPnl2" name="MetronomeOutputPanel.h" compile="0" resource="0"
+          file="Source/MetronomeOutputPanel.h"/>
   </MAINGROUP>
   <MODULES>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
