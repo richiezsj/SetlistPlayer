@@ -15,12 +15,7 @@ Gestisci la scaletta, lancia le basi e tieni il tempo — tutto da un'unica app,
 
 <div align="center">
 
-<!-- Inserisci qui lo screenshot dell'app:
-     1. Salva l'immagine in docs/screenshot.png
-     2. Decommenta la riga sotto -->
-<!-- ![SetlistPlayer in azione](docs/screenshot.png) -->
-
-*Screenshot in arrivo.*
+![SetlistPlayer in azione](docs/screenshot.png)
 
 </div>
 
@@ -38,9 +33,10 @@ Di solito significa: un player per le basi, un metronomo a parte, un foglio con 
 ## ✨ Funzionalità
 
 - 🎼 **Gestione scaletta** — Lista ordinata dei brani con drag-and-drop, pulsanti ▲/▼, aggiungi e rimuovi al volo.
-- 🎚️ **Player delle basi** — Riproduzione stereo di file **WAV, AIFF, MP3 e FLAC** con controllo del volume e indicatore di posizione.
+- 🎚️ **Player delle basi** — Riproduzione stereo di file **WAV, AIFF, MP3 e FLAC** con indicatore di posizione.
+- 🎛️ **Mixer Audio / Click** — Fader indipendenti per base e metronomo, ciascuno con tasto **Mute**: dosa il click nelle in-ear senza toccare la base.
 - 🥁 **Metronomo integrato** — Click sintetizzato con accento sul primo movimento, **perfettamente sincronizzato** con la base audio.
-- 🎹 **Uscita MIDI** — Click MIDI opzionale (canale 10) da inviare a moduli, batterie elettroniche o in-ear.
+- 🎹 **Uscita MIDI** — Click MIDI opzionale con canale e note di downbeat/beat configurabili, da inviare a moduli, batterie elettroniche o in-ear.
 - 💡 **Transport chiaro a colpo d'occhio** — BPM in grande, LED dei movimenti, Play / Stop / Next: tutto leggibile anche sotto le luci del palco.
 - ✏️ **Editor del brano** — Nome, BPM (20–300), metro e base audio, modificabili per ogni canzone.
 - 💾 **Progetti salvabili** — Salva l'intera scaletta in un file `.setlist` e riaprila quando vuoi.
@@ -119,10 +115,9 @@ I progetti sono salvati come `juce::ValueTree` serializzato:
 
 ## 🛣️ Idee per il futuro
 
-- Selezione del dispositivo di uscita MIDI dall'interfaccia
-- Slider dedicato al volume del click
 - **Count-in / pre-roll** prima dell'avvio della base
 - Campi *note* e *tonalità* per ogni brano
+- Esportazione della scaletta in PDF
 
 ---
 
