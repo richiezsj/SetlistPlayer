@@ -1,0 +1,536 @@
+#include "MainComponent.h"
+
+MainComponent::MainComponent()
+{
+    
+    // ---- Build UI first, audio starts at the end ----
+
+    // Command manager
+    commandManager.registerAllCommandsForTarget(this);
+    addKeyListener(commandManager.getKeyMappings());
+
+    // Menu bar
+    menuBar = std::make_unique<juce::MenuBarComponent>(this);
+    addAndMakeVisible(*menuBar);
+
+    // Setlist panel (left)
+    setlistPanel = std::make_unique<SetlistPanel>();
+    setlistPanel->setProject(&project);
+    setlistPanel->onSongSelected  = [this](int idx) { onSongSelected(idx); };
+    setlistPanel->onSetlistChanged = [this]
+    {
+        projectModified = true;
+        updateTitle();
+        setlistPanel->refreshList();
+    };
+    addAndMakeVisible(*setlistPanel);
+
+    // Transport panel (centre)
+    transportPanel = std::make_unique<TransportPanel>(metronome, audioPlayer);
+    transportPanel->onPlay     = [this] { onPlayTriggered(); };
+    transportPanel->onStop     = [this] { onStopTriggered(); };
+    transportPanel->onNextSong = [this] { onNextSong(); };
+    addAndMakeVisible(*transportPanel);
+
+    // Song editor panel (right)
+    editorPanel = std::make_unique<SongEditorPanel>();
+    editorPanel->onSongChanged = [this]
+    {
+        projectModified = true;
+        updateTitle();
+        setlistPanel->refreshList();
+        if (auto* s = setlistPanel->getSelectedSong())
+        {
+            transportPanel->loadSong(s);
+            metronome.setBpm(s->bpm);
+            metronome.setTimeSignature(s->beatsPerBar, s->beatUnit);
+        }
+    };
+    addAndMakeVisible(*editorPanel);
+
+    updateTitle();
+    setWantsKeyboardFocus(true);
+
+    // setSize AFTER all panels exist — triggers resized() safely
+    setSize(1100, 700);
+
+    // ---- Start audio AFTER all UI objects exist ----
+    deviceManager.initialiseWithDefaultDevices(0, 2);
+    sourcePlayer.setSource(&mixerSource);
+    deviceManager.addAudioCallback(&sourcePlayer);
+
+    // ---- Wire VU meter callbacks (called on audio thread – lock-free) ----
+    mixerSource.onLevelAudio = [this](float rms)
+    {
+        transportPanel->audioStrip.pushLevel(rms);
+    };
+    mixerSource.onLevelMetro = [this](float rms)
+    {
+        transportPanel->metroStrip.pushLevel(rms);
+    };
+}
+
+MainComponent::~MainComponent()
+{
+    // Clear level callbacks before audio thread is stopped
+    mixerSource.onLevelAudio = nullptr;
+    mixerSource.onLevelMetro = nullptr;
+
+    // Stop audio thread before any member is destroyed
+    deviceManager.removeAudioCallback(&sourcePlayer);
+    sourcePlayer.setSource(nullptr);
+    mixerSource.releaseResources();
+
+    // Clear metronome callback before TransportPanel is destroyed
+    metronome.onBeat = nullptr;
+}
+
+
+void MainComponent::paint(juce::Graphics& g)
+{
+    g.fillAll(juce::Colour(0xFF0F0F1A));
+}
+
+void MainComponent::resized()
+{
+    if (menuBar == nullptr || setlistPanel == nullptr ||
+        editorPanel == nullptr || transportPanel == nullptr)
+        return;
+
+    auto area = getLocalBounds();
+    menuBar->setBounds(area.removeFromTop(24));
+
+    int leftW  = 280;
+    int rightW = 320;
+
+    setlistPanel->setBounds(area.removeFromLeft(leftW).reduced(4));
+    editorPanel->setBounds(area.removeFromRight(rightW).reduced(4));
+    transportPanel->setBounds(area.reduced(4));
+}
+
+// ============================================================
+// MenuBarModel
+// ============================================================
+juce::StringArray MainComponent::getMenuBarNames()
+{
+    return { "File", "Edit", "Help" };
+}
+
+juce::PopupMenu MainComponent::getMenuForIndex(int menuIndex, const juce::String&)
+{
+    juce::PopupMenu menu;
+    if (menuIndex == 0)
+    {
+        menu.addCommandItem(&commandManager, newProject);
+        menu.addCommandItem(&commandManager, openProject);
+        menu.addSeparator();
+        menu.addCommandItem(&commandManager, saveProject);
+        menu.addCommandItem(&commandManager, saveProjectAs);
+        menu.addSeparator();
+        menu.addCommandItem(&commandManager, audioSetup);
+        menu.addSeparator();
+        menu.addCommandItem(&commandManager, quitApp);
+    }
+    else if (menuIndex == 1)
+    {
+        menu.addCommandItem(&commandManager, addSong);
+    }
+    else if (menuIndex == 2)
+    {
+        menu.addCommandItem(&commandManager, aboutApp);
+    }
+    return menu;
+}
+
+void MainComponent::menuItemSelected(int, int) {}
+
+// ============================================================
+// Commands
+// ============================================================
+void MainComponent::getAllCommands(juce::Array<juce::CommandID>& commands)
+{
+    commands.addArray({ newProject, openProject, saveProject, saveProjectAs, addSong, quitApp, aboutApp, audioSetup });
+}
+
+void MainComponent::getCommandInfo(juce::CommandID commandID, juce::ApplicationCommandInfo& result)
+{
+    switch (commandID)
+    {
+        case newProject:    result.setInfo("New Project",    "Create new project",         "File", 0);
+                            result.addDefaultKeypress('N', juce::ModifierKeys::commandModifier); break;
+        case openProject:   result.setInfo("Open Project...", "Open project file",         "File", 0);
+                            result.addDefaultKeypress('O', juce::ModifierKeys::commandModifier); break;
+        case saveProject:   result.setInfo("Save Project",   "Save current project",       "File", 0);
+                            result.addDefaultKeypress('S', juce::ModifierKeys::commandModifier); break;
+        case saveProjectAs: result.setInfo("Save As...",     "Save project with new name", "File", 0);
+                            result.addDefaultKeypress('S', juce::ModifierKeys::commandModifier | juce::ModifierKeys::shiftModifier); break;
+        case addSong:       result.setInfo("Add Song",       "Add a new song to setlist",  "Edit", 0);
+                            result.addDefaultKeypress('T', juce::ModifierKeys::commandModifier); break;
+        case quitApp:       result.setInfo("Quit",           "Quit application",           "File", 0);
+                            result.addDefaultKeypress('Q', juce::ModifierKeys::commandModifier); break;
+        case aboutApp:      result.setInfo("About SetlistPlayer...", "Show application info", "Help", 0); break;
+        case audioSetup:    result.setInfo("Audio Setup...", "Configure audio device and sample rate", "File", 0);
+                            result.addDefaultKeypress(',', juce::ModifierKeys::commandModifier); break;
+        default: break;
+    }
+}
+
+bool MainComponent::perform(const juce::ApplicationCommandTarget::InvocationInfo& info)
+{
+    switch (info.commandID)
+    {
+        case newProject:    cmdNewProject();    return true;
+        case openProject:   cmdOpenProject();   return true;
+        case saveProject:   cmdSaveProject();   return true;
+        case saveProjectAs: cmdSaveProjectAs(); return true;
+        case addSong:
+        {
+            setlistPanel->onSongSelected = nullptr;
+            Song s; s.name = "Song " + juce::String(project.songs.size() + 1);
+            project.addSong(s);
+            setlistPanel->refreshList();
+            projectModified = true;
+            updateTitle();
+            setlistPanel->onSongSelected = [this](int idx) { onSongSelected(idx); };
+            return true;
+        }
+        case quitApp:
+            juce::JUCEApplication::getInstance()->systemRequestedQuit();
+            return true;
+        case aboutApp:
+            cmdAbout();
+            return true;
+        case audioSetup:
+            cmdAudioSetup();
+            return true;
+        default: return false;
+    }
+}
+
+// ============================================================
+// Project management
+// ============================================================
+void MainComponent::cmdNewProject()
+{
+    if (projectModified)
+    {
+        auto result = juce::NativeMessageBox::showYesNoCancelBox(
+            juce::MessageBoxIconType::QuestionIcon, "New Project",
+            "Save current project before creating a new one?",
+            nullptr, nullptr);
+        if (result == 1) cmdSaveProject();
+        else if (result == 2) return;
+    }
+
+    onStopTriggered();
+    project = Project();
+    selectedSongIndex = -1;
+    projectModified = false;
+    setlistPanel->setProject(&project);
+    editorPanel->clearSong();
+    transportPanel->clearSong();
+    updateTitle();
+}
+
+void MainComponent::cmdOpenProject()
+{
+    auto chooser = std::make_shared<juce::FileChooser>(
+        "Open Setlist Project",
+        juce::File::getSpecialLocation(juce::File::userDocumentsDirectory),
+        "*.setlist");
+
+    chooser->launchAsync(juce::FileBrowserComponent::openMode |
+                         juce::FileBrowserComponent::canSelectFiles,
+        [this, chooser](const juce::FileChooser& fc)
+        {
+            auto results = fc.getResults();
+            if (results.isEmpty()) return;
+
+            onStopTriggered();
+            if (project.load(results[0]))
+            {
+                selectedSongIndex = -1;
+                projectModified   = false;
+                setlistPanel->setProject(&project);
+                editorPanel->clearSong();
+                transportPanel->clearSong();
+                updateTitle();
+            }
+        });
+}
+
+void MainComponent::cmdSaveProject()
+{
+    if (!project.projectFile.existsAsFile())
+    {
+        cmdSaveProjectAs();
+        return;
+    }
+    project.save(project.projectFile);
+    projectModified = false;
+    updateTitle();
+}
+
+void MainComponent::cmdSaveProjectAs()
+{
+    auto chooser = std::make_shared<juce::FileChooser>(
+        "Save Setlist Project",
+        juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
+            .getChildFile(project.projectName + ".setlist"),
+        "*.setlist");
+
+    chooser->launchAsync(juce::FileBrowserComponent::saveMode |
+                         juce::FileBrowserComponent::canSelectFiles,
+        [this, chooser](const juce::FileChooser& fc)
+        {
+            auto results = fc.getResults();
+            if (results.isEmpty()) return;
+
+            auto file = results[0].withFileExtension("setlist");
+            project.projectName = file.getFileNameWithoutExtension();
+            project.save(file);
+            projectModified = false;
+            updateTitle();
+        });
+}
+
+void MainComponent::updateTitle()
+{
+    juce::String title = "SetlistPlayer - " + project.projectName;
+    if (projectModified) title += " *";
+    if (auto* window = findParentComponentOfClass<juce::DocumentWindow>())
+        window->setName(title);
+}
+
+// ============================================================
+// Song selection & playback
+// ============================================================
+void MainComponent::onSongSelected(int index)
+{
+    selectedSongIndex = index;
+    Song* song = setlistPanel->getSelectedSong();
+    if (song == nullptr)
+    {
+        editorPanel->clearSong();
+        transportPanel->clearSong();
+        return;
+    }
+
+    editorPanel->loadSong(&project, index);   // pass project + index, not raw pointer
+    transportPanel->loadSong(song);
+
+    metronome.setBpm(song->bpm);
+    metronome.setTimeSignature(song->beatsPerBar, song->beatUnit);
+
+    onStopTriggered();
+
+    if (song->audioFile.existsAsFile())
+        audioPlayer.loadFile(song->audioFile);
+    else
+        audioPlayer.unloadFile();
+}
+
+void MainComponent::onPlayTriggered()
+{
+    Song* song = setlistPanel->getSelectedSong();
+    if (song == nullptr) return;
+
+    metronome.setBpm(song->bpm);
+    metronome.setTimeSignature(song->beatsPerBar, song->beatUnit);
+    metronome.start();
+
+    if (audioPlayer.isFileLoaded())
+        audioPlayer.play();
+}
+
+void MainComponent::onStopTriggered()
+{
+    metronome.stop();
+    metronome.reset();
+    audioPlayer.stop();
+}
+
+void MainComponent::parentHierarchyChanged()
+{
+    if (auto* tlw = getTopLevelComponent())
+        tlw->addKeyListener(&spaceListener);
+}
+
+bool MainComponent::keyPressed(const juce::KeyPress& key)
+{
+    if (key == juce::KeyPress::spaceKey)
+    {
+        if (metronome.isPlaying())
+            onStopTriggered();
+        else
+            onPlayTriggered();
+        return true;
+    }
+    return false;
+}
+
+void MainComponent::onNextSong()
+{
+    onStopTriggered();
+    int next = selectedSongIndex + 1;
+    if (next < project.songs.size())
+    {
+        setlistPanel->selectRow(next);   // visually highlight in the list
+        onSongSelected(next);
+    }
+}
+
+// ============================================================
+// About window
+// ============================================================
+class AboutWindow : public juce::DocumentWindow
+{
+public:
+    AboutWindow()
+        : DocumentWindow("About SetlistPlayer",
+                         juce::Colour(0xFF0F0F1A),
+                         DocumentWindow::closeButton)
+    {
+        setUsingNativeTitleBar(false);
+        setTitleBarButtonsRequired(DocumentWindow::closeButton, false);
+        setResizable(false, false);
+        setContentOwned(new AboutContent(), true);
+        centreWithSize(420, 340);
+        setVisible(true);
+    }
+
+    void closeButtonPressed() override { delete this; }
+
+private:
+    // ---------------------------------------------------------
+    struct AboutContent : public juce::Component
+    {
+        AboutContent()
+        {
+            setSize(420, 340);
+        }
+
+        void paint(juce::Graphics& g) override
+        {
+            // Background
+            g.fillAll(juce::Colour(0xFF0F0F1A));
+
+            // Top accent bar
+            g.setColour(juce::Colour(0xFF4488FF));
+            g.fillRect(0, 0, getWidth(), 4);
+
+            // App name
+            g.setFont(juce::Font(28.0f).boldened());
+            g.setColour(juce::Colours::white);
+            g.drawText("SetlistPlayer", 0, 24, getWidth(), 36,
+                       juce::Justification::centred);
+
+            // Version
+            g.setFont(juce::Font(13.0f).italicised());
+            g.setColour(juce::Colour(0xFF4488FF));
+            g.drawText("Version 1.0.0", 0, 64, getWidth(), 20,
+                       juce::Justification::centred);
+
+            // Divider
+            g.setColour(juce::Colour(0xFF334455));
+            g.drawLine(40.0f, 94.0f, (float)(getWidth() - 40), 94.0f, 1.0f);
+
+            // Author block
+            g.setFont(juce::Font(12.0f).boldened());
+            g.setColour(juce::Colour(0xFFAABBCC));
+            g.drawText("Sviluppato da", 0, 106, getWidth(), 18,
+                       juce::Justification::centred);
+
+            g.setFont(juce::Font(16.0f).boldened());
+            g.setColour(juce::Colours::white);
+            g.drawText("Il tuo nome / Studio", 0, 128, getWidth(), 22,
+                       juce::Justification::centred);
+
+            g.setFont(juce::Font(11.0f));
+            g.setColour(juce::Colour(0xFF7788AA));
+            g.drawText("tua@email.com", 0, 154, getWidth(), 18,
+                       juce::Justification::centred);
+
+            // Divider
+            g.setColour(juce::Colour(0xFF334455));
+            g.drawLine(40.0f, 182.0f, (float)(getWidth() - 40), 182.0f, 1.0f);
+
+            // Description
+            g.setFont(juce::Font(11.5f));
+            g.setColour(juce::Colour(0xFF8899AA));
+            g.drawText("Live setlist manager con metronomo e backing track",
+                       0, 194, getWidth(), 18, juce::Justification::centred);
+            g.drawText("Costruito con JUCE 8   |   C++17   |   macOS",
+                       0, 214, getWidth(), 18, juce::Justification::centred);
+
+            // Divider
+            g.setColour(juce::Colour(0xFF334455));
+            g.drawLine(40.0f, 242.0f, (float)(getWidth() - 40), 242.0f, 1.0f);
+
+            // Copyright
+            g.setFont(juce::Font(10.5f));
+            g.setColour(juce::Colour(0xFF556677));
+            g.drawText("Copyright " + juce::String::fromUTF8("\xc2\xa9")
+                       + " 2025 Il tuo nome. Tutti i diritti riservati.",
+                       0, 254, getWidth(), 16, juce::Justification::centred);
+        }
+
+        void mouseUp(const juce::MouseEvent&) override
+        {
+            if (auto* w = findParentComponentOfClass<AboutWindow>())
+                delete w;
+        }
+    };
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AboutWindow)
+};
+
+void MainComponent::cmdAbout()
+{
+    new AboutWindow();   // self-deleting on close
+}
+// ============================================================
+// Audio Setup window
+// ============================================================
+class AudioSetupWindow : public juce::DocumentWindow
+{
+public:
+    AudioSetupWindow(juce::AudioDeviceManager& dm)
+        : DocumentWindow("Audio Setup",
+                         juce::Colour(0xFF0F0F1A),
+                         DocumentWindow::closeButton)
+    {
+        setUsingNativeTitleBar(true);
+        setResizable(true, false);
+
+        // AudioDeviceSelectorComponent(deviceManager,
+        //   minInputChannels, maxInputChannels,
+        //   minOutputChannels, maxOutputChannels,
+        //   showMidiInputOptions, showMidiOutputSelector,
+        //   showChannelsAsStereoPairs, hideAdvancedOptionsWithButton)
+        auto* selector = new juce::AudioDeviceSelectorComponent(
+            dm,
+            0, 0,       // no inputs needed
+            2, 2,       // stereo output
+            false,      // no MIDI input list (handled separately)
+            false,      // no MIDI output list
+            true,       // show stereo pairs
+            false);     // show all options immediately
+
+        selector->setSize(500, 400);
+        setContentOwned(selector, true);
+        centreWithSize(getContentComponent()->getWidth()  + 8,
+                       getContentComponent()->getHeight() + getTitleBarHeight() + 8);
+        setVisible(true);
+    }
+
+    void closeButtonPressed() override { delete this; }
+
+private:
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioSetupWindow)
+};
+
+void MainComponent::cmdAudioSetup()
+{
+    new AudioSetupWindow(deviceManager);  // self-deleting on close
+}

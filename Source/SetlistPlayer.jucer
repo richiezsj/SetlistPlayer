@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<JUCERPROJECT id="SetlistPlayer"
+              name="SetlistPlayer"
+              projectType="guiapp"
+              version="1.0.0"
+              bundleIdentifier="com.yourcompany.SetlistPlayer"
+              companyName="Your Company"
+              companyWebsite=""
+              companyEmail=""
+              pluginManufacturerCode="Manu"
+              pluginCode="Plug"
+              pluginName="SetlistPlayer"
+              jucerFormatVersion="1"
+              jucerVersion="7.0.9"
+              buildVST="0"
+              buildAU="0"
+              buildStandalone="0">
+  <MAINGROUP id="SetlistPlayer" name="SetlistPlayer">
+    <GROUP id="Source" name="Source">
+      <FILE id="file1"  name="Main.cpp"             compile="1" resource="0" file="Source/Main.cpp"/>
+      <FILE id="file2"  name="MainComponent.h"      compile="0" resource="0" file="Source/MainComponent.h"/>
+      <FILE id="file3"  name="MainComponent.cpp"    compile="1" resource="0" file="Source/MainComponent.cpp"/>
+      <FILE id="file4"  name="Project.h"            compile="0" resource="0" file="Source/Project.h"/>
+      <FILE id="file5"  name="MetronomeEngine.h"    compile="0" resource="0" file="Source/MetronomeEngine.h"/>
+      <FILE id="file6"  name="MetronomeEngine.cpp"  compile="1" resource="0" file="Source/MetronomeEngine.cpp"/>
+      <FILE id="file7"  name="AudioPlayerEngine.h"  compile="0" resource="0" file="Source/AudioPlayerEngine.h"/>
+      <FILE id="file8"  name="AudioPlayerEngine.cpp" compile="1" resource="0" file="Source/AudioPlayerEngine.cpp"/>
+      <FILE id="file9"  name="SetlistPanel.h"       compile="0" resource="0" file="Source/SetlistPanel.h"/>
+      <FILE id="file10" name="SetlistPanel.cpp"     compile="1" resource="0" file="Source/SetlistPanel.cpp"/>
+      <FILE id="file11" name="SongEditorPanel.h"    compile="0" resource="0" file="Source/SongEditorPanel.h"/>
+      <FILE id="file12" name="SongEditorPanel.cpp"  compile="1" resource="0" file="Source/SongEditorPanel.cpp"/>
+      <FILE id="file13" name="TransportPanel.h"     compile="0" resource="0" file="Source/TransportPanel.h"/>
+      <FILE id="file14" name="TransportPanel.cpp"   compile="1" resource="0" file="Source/TransportPanel.cpp"/>
+    </GROUP>
+  </MAINGROUP>
+
+  <MODULES>
+    <MODULE id="juce_audio_basics"       showAllCode="1" useLocalCopy="0"/>
+    <MODULE id="juce_audio_devices"      showAllCode="1" useLocalCopy="0"/>
+    <MODULE id="juce_audio_formats"      showAllCode="1" useLocalCopy="0"/>
+    <MODULE id="juce_audio_processors"   showAllCode="1" useLocalCopy="0"/>
+    <MODULE id="juce_audio_utils"        showAllCode="1" useLocalCopy="0"/>
+    <MODULE id="juce_core"               showAllCode="1" useLocalCopy="0"/>
+    <MODULE id="juce_data_structures"    showAllCode="1" useLocalCopy="0"/>
+    <MODULE id="juce_events"             showAllCode="1" useLocalCopy="0"/>
+    <MODULE id="juce_graphics"           showAllCode="1" useLocalCopy="0"/>
+    <MODULE id="juce_gui_basics"         showAllCode="1" useLocalCopy="0"/>
+    <MODULE id="juce_gui_extra"          showAllCode="1" useLocalCopy="0"/>
+  </MODULES>
+
+  <EXPORTFORMATS>
+    <XCODE_MAC
+      targetFolder="Builds/MacOSX"
+      extraLinkerFlags=""
+      extraCompilerFlags=""
+      osxSDK="default"
+      osxDeploymentTarget="10.13"
+      macOSArchitectures="Native"
+      xcodeSubprojects="">
+      <CONFIGURATIONS>
+        <CONFIGURATION name="Debug"
+                       isDebug="1"
+                       optimisation="1"
+                       targetName="SetlistPlayer"
+                       macOSDeploymentTarget="10.13"/>
+        <CONFIGURATION name="Release"
+                       isDebug="0"
+                       optimisation="3"
+                       targetName="SetlistPlayer"
+                       macOSDeploymentTarget="10.13"/>
+      </CONFIGURATIONS>
+    </XCODE_MAC>
+  </EXPORTFORMATS>
+</JUCERPROJECT>

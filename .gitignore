@@ -1,0 +1,11 @@
+# macOS
+.DS_Store
+
+# JUCE generated / build artifacts
+Builds/
+JuceLibraryCode/
+
+# Build outputs
+*.o
+*.obj
+*.app
