@@ -127,6 +127,59 @@ MetronomeOutputPanel::~MetronomeOutputPanel()
     metronome.setMidiOutputDevice(nullptr);
 }
 
+int MetronomeOutputPanel::getMidiMode() const
+{
+    return midiModeBox.getSelectedId();
+}
+
+juce::String MetronomeOutputPanel::getSelectedDeviceIdentifier() const
+{
+    auto devices = juce::MidiOutput::getAvailableDevices();
+    int idx = midiDeviceBox.getSelectedId() - 1;
+    return (idx >= 0 && idx < devices.size()) ? devices[idx].identifier : juce::String();
+}
+
+juce::String MetronomeOutputPanel::getSelectedDeviceName() const
+{
+    auto devices = juce::MidiOutput::getAvailableDevices();
+    int idx = midiDeviceBox.getSelectedId() - 1;
+    return (idx >= 0 && idx < devices.size()) ? devices[idx].name : juce::String();
+}
+
+void MetronomeOutputPanel::restoreState(int mode, const juce::String& deviceId,
+                                        const juce::String& deviceName,
+                                        int channel, int noteDown, int noteBeat)
+{
+    // Channel & notes: setting the sliders updates the engine via onValueChange.
+    midiChannelSlider.setValue(channel,   juce::sendNotificationSync);
+    midiNoteDownSlider.setValue(noteDown, juce::sendNotificationSync);
+    midiNoteBeatSlider.setValue(noteBeat, juce::sendNotificationSync);
+
+    // Resolve the saved device among those currently available (by identifier,
+    // then by name as a fallback).
+    refreshMidiDevices();
+    auto devices = juce::MidiOutput::getAvailableDevices();
+    int deviceIdx = -1;
+    for (int i = 0; i < devices.size(); ++i)
+        if ((deviceId.isNotEmpty()   && devices[i].identifier == deviceId)
+         || (deviceName.isNotEmpty() && devices[i].name       == deviceName))
+        {
+            deviceIdx = i;
+            break;
+        }
+
+    // If the saved mode needs MIDI but the device is gone, fall back to internal.
+    const bool wantsMidi = (mode == 2 || mode == 3);
+    if (wantsMidi && deviceIdx < 0)
+        mode = 1;
+
+    if (deviceIdx >= 0)
+        midiDeviceBox.setSelectedId(deviceIdx + 1, juce::dontSendNotification);
+
+    midiModeBox.setSelectedId(mode, juce::dontSendNotification);
+    applyMidiMode();   // opens the device / sets the engine flags to match
+}
+
 void MetronomeOutputPanel::refreshCountIn()
 {
     const int bars = metronome.getCountInBars();   // 0/1/2/4 -> id 1/2/3/4

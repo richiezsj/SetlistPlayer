@@ -259,6 +259,16 @@ void MainComponent::loadSettings()
 
     metronome.setCountInBars(p->getIntValue("countInBars", 0));
     metronomeOutput.refreshCountIn();
+
+    // MIDI output: mode / device / channel / notes. restoreState falls back to
+    // the internal click if the saved device is no longer present.
+    metronomeOutput.restoreState(
+        p->getIntValue("midiMode", 1),
+        p->getValue   ("midiDeviceId",   {}),
+        p->getValue   ("midiDeviceName", {}),
+        p->getIntValue("midiChannel",  metronome.getMidiChannel()),
+        p->getIntValue("midiNoteDown", metronome.getMidiNoteDown()),
+        p->getIntValue("midiNoteBeat", metronome.getMidiNoteBeat()));
 }
 
 void MainComponent::saveSettings()
@@ -273,6 +283,14 @@ void MainComponent::saveSettings()
     p->setValue("clickPan",  metronome.getPan());
     p->setValue("clickMute", metronome.isMuted());
     p->setValue("countInBars", metronome.getCountInBars());
+
+    p->setValue("midiMode",       metronomeOutput.getMidiMode());
+    p->setValue("midiDeviceId",   metronomeOutput.getSelectedDeviceIdentifier());
+    p->setValue("midiDeviceName", metronomeOutput.getSelectedDeviceName());
+    p->setValue("midiChannel",    metronome.getMidiChannel());
+    p->setValue("midiNoteDown",   metronome.getMidiNoteDown());
+    p->setValue("midiNoteBeat",   metronome.getMidiNoteBeat());
+
     p->saveIfNeeded();
 }
 

@@ -149,7 +149,7 @@ Legenda: ✅ implementato · 🟡 parziale/limitato · ⬜ non presente
 | Nome progetto, brani, BPM, metro, path base | ✅ |
 | Volume / pan / mute di Base e Click | ✅ (in un settings file globale, non nel `.setlist`) |
 | Count-in (battute) | ✅ (settings file globale) |
-| Modalità e device MIDI, canale, note | ❌ (device variabile tra avvii) |
+| Modalità e device MIDI, canale, note | ✅ (settings file globale; device risolto per identifier/nome, fallback su click interno se assente) |
 | Device audio / sample rate / buffer | ❌ (default di sistema a ogni avvio) |
 
 ---
@@ -171,7 +171,7 @@ Ordinati per priorità.
 8. ~~**Auto-avanzamento**~~ → **Fatto.** `AudioPlayerEngine::onPlaybackFinished` collegato: a fine base la selezione avanza al brano successivo (riusa `onNextSong`, nessun auto-play). La notifica è protetta da un latch (`finishedNotified`) per sparare una sola volta e viene azzerata alla distruzione della UI.
 
 ### Priorità bassa — funzionalità / pulizia
-9. 🟡 **Persistere il mix** — **Fatto in parte.** Volume/pan/mute di Base e Click e il count-in sono salvati in un `PropertiesFile` globale (`ApplicationProperties`) e ripristinati all'avvio. **Rimane** la persistenza di modalità/device/canale/note MIDI (device non garantito presente al riavvio).
+9. ~~**Persistere il mix e le impostazioni MIDI**~~ → **Fatto.** Volume/pan/mute di Base e Click, count-in e le impostazioni MIDI (modalità, device, canale, note) sono salvati in un `PropertiesFile` globale (`ApplicationProperties`) e ripristinati all'avvio. Il device viene risolto per `identifier` (fallback sul nome); se non è più presente si ricade sul click interno.
 10. ~~**Path audio relativi**~~ → **Fatto.** Salvato `audioFileRelative` (relativo alla cartella del `.setlist`) accanto al path assoluto di fallback; in apertura si risolve il relativo e, se manca, si ricade sull'assoluto. `Project::missingAudioFiles()` + avviso all'apertura per i brani con base non trovata.
 11. ~~**Drag-and-drop reale**~~ → **Fatto.** Trascinando una riga la scaletta si riordina davvero (`SongListBox` come `DragAndDropTarget`, indice via `getInsertionIndexForPosition` con correzione dello shift). I pulsanti ▲/▼ restano disponibili.
 12. **Resume della base** — `play()` non dovrebbe forzare `setPosition(0)` se si vuole vera pausa.
@@ -201,5 +201,6 @@ Ordinati per priorità.
 | 2026-07-02 | Risolto fix #5 (priorità media): invio MIDI RT-safe via FIFO lock-free + HighResolutionTimer, con noteOff/allNotesOff |
 | 2026-07-02 | Risolto fix #7 (priorità media): count-in di 0/1/2/4 battute prima dell'avvio della base |
 | 2026-07-02 | Priorità bassa: #13 dead code, #10 path relativi + file mancanti, #11 drag-and-drop reale, #14a note/tonalità per brano, #9 (parziale) persistenza mix+count-in |
+| 2026-07-02 | Completato #9: aggiunta anche la persistenza delle impostazioni MIDI (modalità/device/canale/note) con fallback sul click interno |
 </content>
 </invoke>

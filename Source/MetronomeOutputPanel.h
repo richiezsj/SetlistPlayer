@@ -26,6 +26,16 @@ public:
     // Re-sync the count-in selector from the engine (after restoring settings).
     void refreshCountIn();
 
+    // --- Persistence support (used by MainComponent's settings file) ---
+    int getMidiMode() const;                         // combo id: 1/2/3
+    juce::String getSelectedDeviceIdentifier() const;
+    juce::String getSelectedDeviceName() const;
+    // Restore mode/device/channel/notes. Falls back to the internal click if
+    // the saved device is no longer available. Opens the device as needed.
+    void restoreState(int mode, const juce::String& deviceId,
+                      const juce::String& deviceName,
+                      int channel, int noteDown, int noteBeat);
+
 private:
     void refreshMidiDevices();
     void applyMidiMode();
