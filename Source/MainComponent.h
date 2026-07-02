@@ -49,6 +49,7 @@ private:
         quitApp       = 0x2005,
         aboutApp      = 0x2006,
         audioSetup    = 0x2007,
+        exportPdf     = 0x2008,
     };
 
     void cmdNewProject();
@@ -57,6 +58,7 @@ private:
     void cmdSaveProjectAs();
     void cmdAbout();
     void cmdAudioSetup();
+    void cmdExportPdf();
     void onSongSelected(int index);
     void onPlayTriggered();
     void onStopTriggered();

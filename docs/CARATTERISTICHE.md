@@ -137,7 +137,7 @@ Legenda: ✅ implementato · 🟡 parziale/limitato · ⬜ non presente
 - ⬜ Progetti recenti / autosave
 
 ### Menu & scorciatoie
-- ✅ ⌘N / ⌘O / ⌘S / ⌘⇧S / ⌘T / ⌘Q / ⌘, (Audio Setup)
+- ✅ ⌘N / ⌘O / ⌘S / ⌘⇧S / ⌘T / ⌘Q / ⌘, (Audio Setup) / ⌘E (Export PDF)
 - ✅ Menu File / Edit / Help, About con versione
 
 ---
@@ -176,7 +176,7 @@ Ordinati per priorità.
 11. ~~**Drag-and-drop reale**~~ → **Fatto.** Trascinando una riga la scaletta si riordina davvero (`SongListBox` come `DragAndDropTarget`, indice via `getInsertionIndexForPosition` con correzione dello shift). I pulsanti ▲/▼ restano disponibili.
 12. ~~**Resume della base**~~ → **Fatto.** Aggiunto un pulsante **Pause/Resume** nel transport. La pausa ferma base e metronomo conservando posizione e beat/bar; il resume li fa ripartire allineati (`AudioPlayerEngine::resume()` senza rewind, `MetronomeEngine::pause()/resume()` senza azzerare i contatori). Gestiti i casi limite: pausa durante il count-in (la base parte solo a count-in concluso), stop/next durante la pausa, `allNotesOff` per non lasciare note MIDI appese. Play continua a ripartire dall'inizio.
 13. ~~**Pulizia dead code**~~ → **Fatto.** Rimosse le dichiarazioni inutilizzate `MetronomeEngine::generateClick` / `generateMidiBeat` (la sintesi è inline in `getNextAudioBlock`).
-14. **Export PDF** della scaletta (roadmap README) — ancora da fare.
+14. ~~**Export PDF** della scaletta~~ → **Fatto.** Menu *File → Export PDF…* (⌘E): genera un PDF A4 multi-pagina con titolo progetto e, per ogni brano, numero/nome, BPM, metro, tonalità, file base e note. Generatore PDF header-only (`SetlistPdf.h`, font Helvetica standard, nessuna dipendenza); struttura/xref verificati con pypdf.
     - ~~Campi **note** e **tonalità** per brano~~ → **Fatto.** `Song::key` e `Song::notes` (persistiti nel `.setlist`), con campi Key (una riga) e Notes (multi-riga) nel Song Editor.
 
 ---
@@ -203,5 +203,6 @@ Ordinati per priorità.
 | 2026-07-02 | Priorità bassa: #13 dead code, #10 path relativi + file mancanti, #11 drag-and-drop reale, #14a note/tonalità per brano, #9 (parziale) persistenza mix+count-in |
 | 2026-07-02 | Completato #9: aggiunta anche la persistenza delle impostazioni MIDI (modalità/device/canale/note) con fallback sul click interno |
 | 2026-07-02 | Risolto #12: pulsante Pause/Resume con pausa/ripresa allineata di base e metronomo |
+| 2026-07-02 | Risolto #14b: export PDF della scaletta (generatore header-only, verificato con pypdf). Backlog completato. |
 </content>
 </invoke>

@@ -1,4 +1,5 @@
 #include "MainComponent.h"
+#include "SetlistPdf.h"
 
 MainComponent::MainComponent()
 {
@@ -152,6 +153,8 @@ juce::PopupMenu MainComponent::getMenuForIndex(int menuIndex, const juce::String
         menu.addCommandItem(&commandManager, saveProject);
         menu.addCommandItem(&commandManager, saveProjectAs);
         menu.addSeparator();
+        menu.addCommandItem(&commandManager, exportPdf);
+        menu.addSeparator();
         menu.addCommandItem(&commandManager, audioSetup);
         menu.addSeparator();
         menu.addCommandItem(&commandManager, quitApp);
@@ -174,7 +177,7 @@ void MainComponent::menuItemSelected(int, int) {}
 // ============================================================
 void MainComponent::getAllCommands(juce::Array<juce::CommandID>& commands)
 {
-    commands.addArray({ newProject, openProject, saveProject, saveProjectAs, addSong, quitApp, aboutApp, audioSetup });
+    commands.addArray({ newProject, openProject, saveProject, saveProjectAs, addSong, quitApp, aboutApp, audioSetup, exportPdf });
 }
 
 void MainComponent::getCommandInfo(juce::CommandID commandID, juce::ApplicationCommandInfo& result)
@@ -196,6 +199,8 @@ void MainComponent::getCommandInfo(juce::CommandID commandID, juce::ApplicationC
         case aboutApp:      result.setInfo("About SetlistPlayer...", "Show application info", "Help", 0); break;
         case audioSetup:    result.setInfo("Audio Setup...", "Configure audio device and sample rate", "File", 0);
                             result.addDefaultKeypress(',', juce::ModifierKeys::commandModifier); break;
+        case exportPdf:     result.setInfo("Export PDF...", "Export the setlist as a PDF", "File", 0);
+                            result.addDefaultKeypress('E', juce::ModifierKeys::commandModifier); break;
         default: break;
     }
 }
@@ -227,6 +232,9 @@ bool MainComponent::perform(const juce::ApplicationCommandTarget::InvocationInfo
             return true;
         case audioSetup:
             cmdAudioSetup();
+            return true;
+        case exportPdf:
+            cmdExportPdf();
             return true;
         default: return false;
     }
@@ -718,4 +726,31 @@ private:
 void MainComponent::cmdAudioSetup()
 {
     new AudioSetupWindow(deviceManager, metronomeOutput);  // self-deleting on close
+}
+
+void MainComponent::cmdExportPdf()
+{
+    auto suggestedName = (project.projectName.isNotEmpty() ? project.projectName : "Setlist")
+                             + ".pdf";
+    auto startDir = project.projectFile.existsAsFile()
+                        ? project.projectFile.getParentDirectory()
+                        : juce::File::getSpecialLocation(juce::File::userDocumentsDirectory);
+
+    auto chooser = std::make_shared<juce::FileChooser>(
+        "Export Setlist as PDF", startDir.getChildFile(suggestedName), "*.pdf");
+
+    chooser->launchAsync(juce::FileBrowserComponent::saveMode |
+                         juce::FileBrowserComponent::canSelectFiles |
+                         juce::FileBrowserComponent::warnAboutOverwriting,
+        [this, chooser](const juce::FileChooser& fc)
+        {
+            auto file = fc.getResult();
+            if (file == juce::File()) return;
+            if (! file.hasFileExtension("pdf")) file = file.withFileExtension("pdf");
+
+            if (! setlistpdf::write(project, file))
+                juce::NativeMessageBox::showMessageBoxAsync(
+                    juce::MessageBoxIconType::WarningIcon, "Export failed",
+                    "Could not write the PDF to:\n" + file.getFullPathName(), this);
+        });
 }
