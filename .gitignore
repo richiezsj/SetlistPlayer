@@ -9,3 +9,6 @@ JuceLibraryCode/
 *.o
 *.obj
 *.app
+
+# Release build outputs
+Release/
