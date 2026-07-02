@@ -2,96 +2,80 @@
 
 SongEditorPanel::SongEditorPanel()
 {
+    auto setupLabel = [this](juce::Label& lbl, const juce::String& text)
+    {
+        lbl.setText(text, juce::dontSendNotification);
+        lbl.setFont(Theme::font(12.0f));
+        lbl.setColour(juce::Label::textColourId, Theme::textSecondary);
+        addAndMakeVisible(lbl);
+    };
+
     sectionLabel.setText("SONG EDITOR", juce::dontSendNotification);
-    sectionLabel.setFont(juce::Font(14.0f).boldened());
-    sectionLabel.setColour(juce::Label::textColourId, juce::Colour(0xFFAABBCC));
+    sectionLabel.setFont(Theme::sectionFont());
+    sectionLabel.setColour(juce::Label::textColourId, Theme::textTertiary);
     addAndMakeVisible(sectionLabel);
 
-    nameLabel.setText("Song Name:", juce::dontSendNotification);
-    nameLabel.setFont(juce::Font(12.0f));
-    addAndMakeVisible(nameLabel);
+    setupLabel(nameLabel, "Song name");
 
     nameEditor.setMultiLine(false);
     nameEditor.setReturnKeyStartsNewLine(false);
+    nameEditor.setFont(Theme::font(14.0f));
     nameEditor.onTextChange = [this] { nameChanged(); };
-    nameEditor.setColour(juce::TextEditor::backgroundColourId, juce::Colour(0xFF2A2A3A));
-    nameEditor.setColour(juce::TextEditor::textColourId, juce::Colours::white);
-    nameEditor.setColour(juce::TextEditor::outlineColourId, juce::Colour(0xFF445566));
     addAndMakeVisible(nameEditor);
 
-    bpmLabel.setText("BPM:", juce::dontSendNotification);
-    bpmLabel.setFont(juce::Font(12.0f));
-    addAndMakeVisible(bpmLabel);
+    setupLabel(bpmLabel, "Tempo");
 
     bpmSlider.setRange(20.0, 300.0, 0.1);
     bpmSlider.setSliderStyle(juce::Slider::LinearHorizontal);
     bpmSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 70, 24);
+    bpmSlider.setTextValueSuffix(" BPM");
     bpmSlider.onValueChange = [this] { bpmChanged(); };
-    bpmSlider.setColour(juce::Slider::thumbColourId, juce::Colour(0xFF4488FF));
-    bpmSlider.setColour(juce::Slider::trackColourId, juce::Colour(0xFF334455));
     addAndMakeVisible(bpmSlider);
 
-    tsLabel.setText("Time Signature:", juce::dontSendNotification);
-    tsLabel.setFont(juce::Font(12.0f));
-    addAndMakeVisible(tsLabel);
+    setupLabel(tsLabel, "Time signature");
 
     for (int i = 1; i <= 12; ++i) tsNumerator.addItem(juce::String(i), i);
     tsNumerator.setSelectedId(4, juce::dontSendNotification);
     tsNumerator.onChange = [this] { tsChanged(); };
-    tsNumerator.setColour(juce::ComboBox::backgroundColourId, juce::Colour(0xFF2A2A3A));
     addAndMakeVisible(tsNumerator);
 
     for (int d : { 2, 4, 8, 16 }) tsDenominator.addItem(juce::String(d), d);
     tsDenominator.setSelectedId(4, juce::dontSendNotification);
     tsDenominator.onChange = [this] { tsChanged(); };
-    tsDenominator.setColour(juce::ComboBox::backgroundColourId, juce::Colour(0xFF2A2A3A));
     addAndMakeVisible(tsDenominator);
 
-    keyLabel.setText("Key:", juce::dontSendNotification);
-    keyLabel.setFont(juce::Font(12.0f));
-    addAndMakeVisible(keyLabel);
+    setupLabel(keyLabel, "Key");
 
     keyEditor.setMultiLine(false);
     keyEditor.setReturnKeyStartsNewLine(false);
+    keyEditor.setFont(Theme::font(14.0f));
+    keyEditor.setTextToShowWhenEmpty("e.g. Am", Theme::textTertiary);
     keyEditor.onTextChange = [this] { keyChanged(); };
-    keyEditor.setColour(juce::TextEditor::backgroundColourId, juce::Colour(0xFF2A2A3A));
-    keyEditor.setColour(juce::TextEditor::textColourId, juce::Colours::white);
-    keyEditor.setColour(juce::TextEditor::outlineColourId, juce::Colour(0xFF445566));
     addAndMakeVisible(keyEditor);
 
-    notesLabel.setText("Notes:", juce::dontSendNotification);
-    notesLabel.setFont(juce::Font(12.0f));
-    addAndMakeVisible(notesLabel);
+    setupLabel(notesLabel, "Notes");
 
     notesEditor.setMultiLine(true);
     notesEditor.setReturnKeyStartsNewLine(true);
+    notesEditor.setFont(Theme::font(13.0f));
     notesEditor.onTextChange = [this] { notesChanged(); };
-    notesEditor.setColour(juce::TextEditor::backgroundColourId, juce::Colour(0xFF2A2A3A));
-    notesEditor.setColour(juce::TextEditor::textColourId, juce::Colours::white);
-    notesEditor.setColour(juce::TextEditor::outlineColourId, juce::Colour(0xFF445566));
     addAndMakeVisible(notesEditor);
 
-    audioLabel.setText("Audio Track:", juce::dontSendNotification);
-    audioLabel.setFont(juce::Font(12.0f));
-    addAndMakeVisible(audioLabel);
+    setupLabel(audioLabel, "Backing track");
 
     audioFileLabel.setText("No file loaded", juce::dontSendNotification);
-    audioFileLabel.setFont(juce::Font(11.0f).italicised());
-    audioFileLabel.setColour(juce::Label::textColourId, juce::Colour(0xFF8899AA));
+    audioFileLabel.setFont(Theme::font(11.5f));
+    audioFileLabel.setColour(juce::Label::textColourId, Theme::textTertiary);
     audioFileLabel.setJustificationType(juce::Justification::centredLeft);
     audioFileLabel.setMinimumHorizontalScale(0.5f);
     addAndMakeVisible(audioFileLabel);
 
     loadAudioButton.setButtonText("Load Audio");
     loadAudioButton.onClick = [this] { loadAudioClicked(); };
-    loadAudioButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF334466));
-    loadAudioButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     addAndMakeVisible(loadAudioButton);
 
     clearAudioButton.setButtonText("Clear");
     clearAudioButton.onClick = [this] { clearAudioClicked(); };
-    clearAudioButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF553333));
-    clearAudioButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     addAndMakeVisible(clearAudioButton);
 
     clearSong();
@@ -101,9 +85,8 @@ SongEditorPanel::~SongEditorPanel() {}
 
 void SongEditorPanel::paint(juce::Graphics& g)
 {
-    g.fillAll(juce::Colour(0xFF1E1E2E));
-    g.setColour(juce::Colour(0xFF334455));
-    g.drawRoundedRectangle(getLocalBounds().toFloat().reduced(2), 6.0f, 1.0f);
+    g.setColour(Theme::panelBg);
+    g.fillRoundedRectangle(getLocalBounds().toFloat(), Theme::radiusLarge);
 }
 
 void SongEditorPanel::resized()

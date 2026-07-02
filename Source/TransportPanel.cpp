@@ -6,52 +6,46 @@ TransportPanel::TransportPanel(MetronomeEngine& metro, AudioPlayerEngine& player
     // -----------------------------------------------------------------------
     // Song name / BPM / status labels
     // -----------------------------------------------------------------------
-    songNameLabel.setFont(juce::Font(20.0f).boldened());
-    songNameLabel.setColour(juce::Label::textColourId, juce::Colours::white);
+    songNameLabel.setFont(Theme::fontBold(21.0f));
+    songNameLabel.setColour(juce::Label::textColourId, Theme::textPrimary);
     songNameLabel.setJustificationType(juce::Justification::centred);
     addAndMakeVisible(songNameLabel);
 
-    bpmDisplayLabel.setFont(juce::Font(36.0f).boldened());
-    bpmDisplayLabel.setColour(juce::Label::textColourId, juce::Colour(0xFF4488FF));
+    bpmDisplayLabel.setFont(Theme::fontBold(40.0f));
+    bpmDisplayLabel.setColour(juce::Label::textColourId, Theme::textPrimary);
     bpmDisplayLabel.setJustificationType(juce::Justification::centred);
     addAndMakeVisible(bpmDisplayLabel);
 
-    statusLabel.setFont(juce::Font(12.0f).italicised());
-    statusLabel.setColour(juce::Label::textColourId, juce::Colour(0xFF8899AA));
+    statusLabel.setFont(Theme::font(12.5f));
+    statusLabel.setColour(juce::Label::textColourId, Theme::textSecondary);
     statusLabel.setJustificationType(juce::Justification::centred);
     addAndMakeVisible(statusLabel);
 
-    positionLabel.setFont(juce::Font(13.0f));
-    positionLabel.setColour(juce::Label::textColourId, juce::Colour(0xFFAABBCC));
+    positionLabel.setFont(Theme::font(13.0f));
+    positionLabel.setColour(juce::Label::textColourId, Theme::textTertiary);
     positionLabel.setJustificationType(juce::Justification::centred);
     addAndMakeVisible(positionLabel);
 
     // -----------------------------------------------------------------------
     // Transport buttons
     // -----------------------------------------------------------------------
-    playButton.setButtonText(juce::String::fromUTF8("\xe2\x96\xb6") + "  PLAY");
+    // Play is the primary action (accent-filled); the rest are neutral.
+    playButton.setButtonText(juce::String::fromUTF8("\xe2\x96\xb6") + "  Play");
     playButton.onClick = [this] { playClicked(); };
-    playButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xFF226644));
-    playButton.setColour(juce::TextButton::buttonOnColourId,juce::Colour(0xFF33AA66));
+    playButton.setColour(juce::TextButton::buttonColourId, Theme::accent);
     playButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     addAndMakeVisible(playButton);
 
-    pauseButton.setButtonText(juce::String::fromUTF8("\xe2\x9d\x9a") + "  PAUSE");  // ❚❚-ish
+    pauseButton.setButtonText(juce::String::fromUTF8("\xe2\x9d\x9a") + "  Pause");
     pauseButton.onClick = [this] { if (onPauseResume) onPauseResume(); };
-    pauseButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xFF665522));
-    pauseButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     addAndMakeVisible(pauseButton);
 
-    stopButton.setButtonText(juce::String::fromUTF8("\xe2\x96\xa0") + "  STOP");
+    stopButton.setButtonText(juce::String::fromUTF8("\xe2\x96\xa0") + "  Stop");
     stopButton.onClick = [this] { stopClicked(); };
-    stopButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xFF662222));
-    stopButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     addAndMakeVisible(stopButton);
 
-    nextButton.setButtonText("NEXT " + juce::String::fromUTF8("\xe2\x96\xb6\xe2\x96\xb6"));
+    nextButton.setButtonText("Next  " + juce::String::fromUTF8("\xe2\x96\xb6\xe2\x96\xb6"));
     nextButton.onClick = [this] { if (onNextSong) onNextSong(); };
-    nextButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xFF334466));
-    nextButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     addAndMakeVisible(nextButton);
 
     // -----------------------------------------------------------------------
@@ -121,19 +115,17 @@ void TransportPanel::updateTransportState()
 
 void TransportPanel::paint(juce::Graphics& g)
 {
-    juce::ColourGradient grad(juce::Colour(0xFF1A1A30), 0, 0,
-                              juce::Colour(0xFF0E0E1C), 0, (float)getHeight(), false);
-    g.setGradientFill(grad);
-    g.fillAll();
+    // Flat elevated card for the transport area.
+    g.setColour(Theme::panelBg);
+    g.fillRoundedRectangle(getLocalBounds().toFloat(), Theme::radiusLarge);
 
     // Beat indicators - use the exact area reserved in resized()
     drawBeatIndicators(g, beatAreaBounds);
 
-    // Divider between strips and main area
+    // Hairline divider between the mixer strips and the main area
     const int stripW = 100;
-    g.setColour(juce::Colour(0xFF334455));
-    g.drawLine((float)(getWidth() - stripW * 2 - 12), 8.0f,
-               (float)(getWidth() - stripW * 2 - 12), (float)(getHeight() - 8), 1.0f);
+    g.setColour(Theme::separator);
+    g.fillRect(getWidth() - stripW * 2 - 12, 12, 1, getHeight() - 24);
 }
 
 void TransportPanel::drawBeatIndicators(juce::Graphics& g, juce::Rectangle<int> area)
@@ -156,15 +148,19 @@ void TransportPanel::drawBeatIndicators(juce::Graphics& g, juce::Rectangle<int> 
 
         if (isActive)
         {
-            g.setColour(isDownBeat ? juce::Colour(0xFFFF6644) : juce::Colour(0xFF4488FF));
+            // Downbeat uses the warm Click accent, other beats the blue accent.
+            g.setColour(isDownBeat ? Theme::clickAccent : Theme::accent);
             g.fillEllipse(dot.toFloat());
         }
         else
         {
-            g.setColour(juce::Colour(0xFF334455));
+            g.setColour(Theme::controlBg);
             g.fillEllipse(dot.toFloat());
-            g.setColour(isDownBeat ? juce::Colour(0xFF884422) : juce::Colour(0xFF334477));
-            g.drawEllipse(dot.toFloat().reduced(1), 1.5f);
+            if (isDownBeat)
+            {
+                g.setColour(Theme::textTertiary);
+                g.drawEllipse(dot.toFloat().reduced(1), 1.5f);
+            }
         }
     }
 }
@@ -232,7 +228,6 @@ void TransportPanel::clearSong()
 void TransportPanel::playClicked()
 {
     playing = true;
-    playButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF33AA66));
     if (onPlay) onPlay();
 }
 
@@ -241,7 +236,6 @@ void TransportPanel::stopClicked()
     playing     = false;
     currentBeat = 0;
     currentBar  = 0;
-    playButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF226644));
     repaint();
     if (onStop) onStop();
 }
@@ -250,8 +244,9 @@ void TransportPanel::setPaused(bool isPaused)
 {
     paused = isPaused;
     pauseButton.setButtonText(paused
-        ? juce::String::fromUTF8("\xe2\x96\xb6") + "  RESUME"
-        : juce::String::fromUTF8("\xe2\x9d\x9a") + "  PAUSE");
+        ? juce::String::fromUTF8("\xe2\x96\xb6") + "  Resume"
+        : juce::String::fromUTF8("\xe2\x9d\x9a") + "  Pause");
+    // Resume becomes the accented (primary) action while paused.
     pauseButton.setColour(juce::TextButton::buttonColourId,
-                          paused ? juce::Colour(0xFF338866) : juce::Colour(0xFF665522));
+                          paused ? Theme::accent : Theme::controlBg);
 }

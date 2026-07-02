@@ -3,40 +3,32 @@
 SetlistPanel::SetlistPanel()
 {
     titleLabel.setText("SETLIST", juce::dontSendNotification);
-    titleLabel.setFont(juce::Font(14.0f).boldened());
-    titleLabel.setColour(juce::Label::textColourId, juce::Colour(0xFFAABBCC));
+    titleLabel.setFont(Theme::sectionFont());
+    titleLabel.setColour(juce::Label::textColourId, Theme::textTertiary);
     addAndMakeVisible(titleLabel);
 
     listBox.setModel(this);
     listBox.setMultipleSelectionEnabled(false);
     listBox.onReorder = [this](int from, int to) { reorderSong(from, to); };
-    listBox.setColour(juce::ListBox::backgroundColourId, juce::Colour(0xFF181828));
-    listBox.setColour(juce::ListBox::outlineColourId, juce::Colour(0xFF334455));
-    listBox.setRowHeight(48);
+    listBox.setColour(juce::ListBox::backgroundColourId, juce::Colours::transparentBlack);
+    listBox.setColour(juce::ListBox::outlineColourId,    juce::Colours::transparentBlack);
+    listBox.setRowHeight(52);
     addAndMakeVisible(listBox);
 
     addButton.setButtonText("+");
     addButton.onClick = [this] { addSong(); };
-    addButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF224433));
-    addButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     addAndMakeVisible(addButton);
 
-    removeButton.setButtonText("-");
+    removeButton.setButtonText(juce::String::fromUTF8("\xe2\x88\x92"));  // −
     removeButton.onClick = [this] { removeSong(); };
-    removeButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF443322));
-    removeButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     addAndMakeVisible(removeButton);
 
     moveUpButton.setButtonText(juce::String::fromUTF8("\xe2\x96\xb2"));  // ▲
     moveUpButton.onClick = [this] { moveSongUp(); };
-    moveUpButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF2A2A3A));
-    moveUpButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     addAndMakeVisible(moveUpButton);
 
     moveDownButton.setButtonText(juce::String::fromUTF8("\xe2\x96\xbc")); // ▼
     moveDownButton.onClick = [this] { moveSongDown(); };
-    moveDownButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF2A2A3A));
-    moveDownButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     addAndMakeVisible(moveDownButton);
 }
 
@@ -44,9 +36,8 @@ SetlistPanel::~SetlistPanel() {}
 
 void SetlistPanel::paint(juce::Graphics& g)
 {
-    g.fillAll(juce::Colour(0xFF1A1A2A));
-    g.setColour(juce::Colour(0xFF334455));
-    g.drawRoundedRectangle(getLocalBounds().toFloat().reduced(2), 6.0f, 1.0f);
+    g.setColour(Theme::panelBg);
+    g.fillRoundedRectangle(getLocalBounds().toFloat(), Theme::radiusLarge);
 }
 
 void SetlistPanel::resized()
@@ -109,41 +100,55 @@ void SetlistPanel::paintListBoxItem(int rowNumber, juce::Graphics& g,
     if (project == nullptr || rowNumber >= project->songs.size()) return;
     const auto& song = project->songs[rowNumber];
 
+    auto bounds = juce::Rectangle<int>(0, 0, width, height);
+
+    // Selection: a filled accent capsule inset from the edges (macOS sidebar).
     if (rowIsSelected)
-        g.fillAll(juce::Colour(0xFF2A4060));
-    else
-        g.fillAll(rowNumber % 2 == 0 ? juce::Colour(0xFF1E1E2E) : juce::Colour(0xFF222236));
-
-    // Track number circle
-    g.setColour(juce::Colour(0xFF4488FF).withAlpha(0.6f));
-    g.fillEllipse(8, (height - 28) / 2.0f, 28, 28);
-    g.setColour(juce::Colours::white);
-    g.setFont(juce::Font(11.0f).boldened());
-    g.drawText(juce::String(rowNumber + 1), 8, (height - 28) / 2, 28, 28, juce::Justification::centred);
-
-    // Song name
-    g.setFont(juce::Font(14.0f).boldened());
-    g.setColour(juce::Colours::white);
-    g.drawText(song.name, 46, 4, juce::jmax(1, width - 110), 22, juce::Justification::centredLeft);
-
-    // BPM
-    g.setFont(juce::Font(11.0f));
-    g.setColour(juce::Colour(0xFF88AACC));
-    g.drawText(juce::String(song.bpm, 1) + " BPM  " +
-               juce::String(song.beatsPerBar) + "/" + juce::String(song.beatUnit),
-               46, 26, juce::jmax(1, width - 110), 16, juce::Justification::centredLeft);
-
-    // Audio icon
-    if (song.audioFile.existsAsFile())
     {
-        g.setColour(juce::Colour(0xFF44CC88));
-        g.setFont(juce::Font(11.0f));
-        g.drawText(juce::String::fromUTF8("\xe2\x99\xaa"), width - 26, (height - 20) / 2, 20, 20, juce::Justification::centred); // ♪
+        g.setColour(Theme::accent);
+        g.fillRoundedRectangle(bounds.reduced(6, 4).toFloat(), Theme::radius);
     }
 
-    // Separator
-    g.setColour(juce::Colour(0xFF334455));
-    g.drawLine(0, (float)height - 1, (float)width, (float)height - 1, 0.5f);
+    const auto nameColour = rowIsSelected ? juce::Colours::white : Theme::textPrimary;
+    const auto subColour  = rowIsSelected ? juce::Colours::white.withAlpha(0.85f)
+                                          : Theme::textSecondary;
+
+    // Track-number index — quiet, not a saturated badge.
+    g.setColour(rowIsSelected ? juce::Colours::white.withAlpha(0.85f) : Theme::textTertiary);
+    g.setFont(Theme::font(12.0f));
+    g.drawText(juce::String(rowNumber + 1), 14, 0, 24, height, juce::Justification::centredLeft);
+
+    const int textX = 44;
+    const int textW = juce::jmax(1, width - textX - 28);
+
+    // Song name
+    g.setColour(nameColour);
+    g.setFont(Theme::fontBold(14.0f));
+    g.drawText(song.name, textX, 8, textW, 20, juce::Justification::centredLeft);
+
+    // Meta line: BPM · time signature · key
+    juce::String meta = juce::String(song.bpm, 1) + " BPM   \xc2\xb7   "
+                      + juce::String(song.beatsPerBar) + "/" + juce::String(song.beatUnit);
+    if (song.key.isNotEmpty()) meta += "   \xc2\xb7   " + song.key;
+    g.setColour(subColour);
+    g.setFont(Theme::font(11.5f));
+    g.drawText(meta, textX, height - 26, textW, 18, juce::Justification::centredLeft);
+
+    // Audio-present indicator
+    if (song.audioFile.existsAsFile())
+    {
+        g.setColour(rowIsSelected ? juce::Colours::white : Theme::textSecondary);
+        g.setFont(Theme::font(12.0f));
+        g.drawText(juce::String::fromUTF8("\xe2\x99\xaa"), width - 26, 0, 18, height,
+                   juce::Justification::centred); // ♪
+    }
+
+    // Hairline separator between rows (not under the selected capsule)
+    if (! rowIsSelected)
+    {
+        g.setColour(Theme::separator);
+        g.fillRect(textX, height - 1, width - textX - 8, 1);
+    }
 }
 
 void SetlistPanel::listBoxItemClicked(int row, const juce::MouseEvent&)

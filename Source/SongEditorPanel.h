@@ -1,6 +1,7 @@
 #pragma once
 #include <JuceHeader.h>
 #include "Project.h"
+#include "Theme.h"
 
 class SongEditorPanel : public juce::Component
 {

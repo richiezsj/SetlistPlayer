@@ -1,6 +1,7 @@
 #pragma once
 #include <atomic>
 #include <JuceHeader.h>
+#include "AppLookAndFeel.h"
 #include "Project.h"
 #include "MetronomeEngine.h"
 #include "AudioPlayerEngine.h"
@@ -85,6 +86,10 @@ private:
         }
     };
     SpaceKeyListener spaceListener { *this };
+
+    // Flat macOS-style look, applied app-wide. Declared first so it is
+    // constructed before, and destroyed after, every component that uses it.
+    AppLookAndFeel lookAndFeel;
 
     // -------------------------------------------------------
     // Data

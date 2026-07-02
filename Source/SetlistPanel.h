@@ -1,6 +1,7 @@
 #pragma once
 #include <JuceHeader.h>
 #include "Project.h"
+#include "Theme.h"
 
 class SetlistPanel : public juce::Component,
                      public juce::ListBoxModel,

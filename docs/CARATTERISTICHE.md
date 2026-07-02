@@ -127,7 +127,7 @@ Legenda: ✅ implementato · 🟡 parziale/limitato · ⬜ non presente
 - ✅ BPM grande, LED movimenti con accento, Play / Stop / Next
 - ✅ Due channel strip (Base / Click) con fader, VU meter (peak-hold + clip), pan knob custom
 - ✅ Barra spaziatrice = Play/Stop globale (anche con focus su un controllo figlio)
-- ✅ Tema scuro coerente, finestre About e Audio Setup
+- ✅ Tema scuro coerente in stile **macOS HIG**: grigi neutri Apple, accento blu di sistema, controlli piatti (LookAndFeel custom), font di sistema, separatori a filo. Token centralizzati in `Theme.h` + `AppLookAndFeel.h`
 
 ### Progetto / file
 - ✅ Nuovo / Apri / Salva / Salva con nome (`.setlist`)
@@ -204,5 +204,6 @@ Ordinati per priorità.
 | 2026-07-02 | Completato #9: aggiunta anche la persistenza delle impostazioni MIDI (modalità/device/canale/note) con fallback sul click interno |
 | 2026-07-02 | Risolto #12: pulsante Pause/Resume con pausa/ripresa allineata di base e metronomo |
 | 2026-07-02 | Risolto #14b: export PDF della scaletta (generatore header-only, verificato con pypdf). Backlog completato. |
+| 2026-07-02 | Redesign UI in stile macOS HIG: `Theme.h` (token) + `AppLookAndFeel.h` (controlli piatti); rifattorizzati tutti i pannelli su grigi neutri + accento blu, font di sistema, separatori a filo. Verificato a schermo. |
 </content>
 </invoke>

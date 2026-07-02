@@ -1,9 +1,11 @@
 #include "MainComponent.h"
 #include "SetlistPdf.h"
+#include "Theme.h"
 
 MainComponent::MainComponent()
 {
-    
+    juce::LookAndFeel::setDefaultLookAndFeel(&lookAndFeel);
+
     // ---- Build UI first, audio starts at the end ----
 
     // Command manager
@@ -109,12 +111,15 @@ MainComponent::~MainComponent()
 
     // Clear metronome callback before TransportPanel is destroyed
     metronome.onBeat = nullptr;
+
+    // Detach the custom look before it (a member) is destroyed.
+    juce::LookAndFeel::setDefaultLookAndFeel(nullptr);
 }
 
 
 void MainComponent::paint(juce::Graphics& g)
 {
-    g.fillAll(juce::Colour(0xFF0F0F1A));
+    g.fillAll(Theme::windowBg);
 }
 
 void MainComponent::resized()
@@ -537,7 +542,7 @@ class AboutWindow : public juce::DocumentWindow
 public:
     AboutWindow()
         : DocumentWindow("About SetlistPlayer",
-                         juce::Colour(0xFF0F0F1A),
+                         Theme::windowBg,
                          DocumentWindow::closeButton)
     {
         setUsingNativeTitleBar(false);
@@ -562,63 +567,63 @@ private:
         void paint(juce::Graphics& g) override
         {
             // Background
-            g.fillAll(juce::Colour(0xFF0F0F1A));
+            g.fillAll(Theme::windowBg);
 
             // Top accent bar
-            g.setColour(juce::Colour(0xFF4488FF));
-            g.fillRect(0, 0, getWidth(), 4);
+            g.setColour(Theme::accent);
+            g.fillRect(0, 0, getWidth(), 3);
+
+            auto divider = [&](float y)
+            {
+                g.setColour(Theme::separator);
+                g.fillRect(40.0f, y, (float)(getWidth() - 80), 1.0f);
+            };
 
             // App name
-            g.setFont(juce::Font(28.0f).boldened());
-            g.setColour(juce::Colours::white);
+            g.setFont(Theme::fontBold(28.0f));
+            g.setColour(Theme::textPrimary);
             g.drawText("SetlistPlayer", 0, 24, getWidth(), 36,
                        juce::Justification::centred);
 
             // Version
-            g.setFont(juce::Font(13.0f).italicised());
-            g.setColour(juce::Colour(0xFF4488FF));
+            g.setFont(Theme::font(13.0f));
+            g.setColour(Theme::accent);
             g.drawText("Version 1.0.0", 0, 64, getWidth(), 20,
                        juce::Justification::centred);
 
-            // Divider
-            g.setColour(juce::Colour(0xFF334455));
-            g.drawLine(40.0f, 94.0f, (float)(getWidth() - 40), 94.0f, 1.0f);
+            divider(94.0f);
 
             // Author block
-            g.setFont(juce::Font(12.0f).boldened());
-            g.setColour(juce::Colour(0xFFAABBCC));
+            g.setFont(Theme::font(12.0f));
+            g.setColour(Theme::textSecondary);
             g.drawText("Sviluppato da", 0, 106, getWidth(), 18,
                        juce::Justification::centred);
 
-            g.setFont(juce::Font(16.0f).boldened());
-            g.setColour(juce::Colours::white);
+            g.setFont(Theme::fontBold(16.0f));
+            g.setColour(Theme::textPrimary);
             g.drawText("Il tuo nome / Studio", 0, 128, getWidth(), 22,
                        juce::Justification::centred);
 
-            g.setFont(juce::Font(11.0f));
-            g.setColour(juce::Colour(0xFF7788AA));
+            g.setFont(Theme::font(11.0f));
+            g.setColour(Theme::textTertiary);
             g.drawText("tua@email.com", 0, 154, getWidth(), 18,
                        juce::Justification::centred);
 
-            // Divider
-            g.setColour(juce::Colour(0xFF334455));
-            g.drawLine(40.0f, 182.0f, (float)(getWidth() - 40), 182.0f, 1.0f);
+            divider(182.0f);
 
             // Description
-            g.setFont(juce::Font(11.5f));
-            g.setColour(juce::Colour(0xFF8899AA));
+            g.setFont(Theme::font(11.5f));
+            g.setColour(Theme::textSecondary);
             g.drawText("Live setlist manager con metronomo e backing track",
                        0, 194, getWidth(), 18, juce::Justification::centred);
             g.drawText("Costruito con JUCE 8   |   C++17   |   macOS",
                        0, 214, getWidth(), 18, juce::Justification::centred);
 
-            // Divider
-            g.setColour(juce::Colour(0xFF334455));
-            g.drawLine(40.0f, 242.0f, (float)(getWidth() - 40), 242.0f, 1.0f);
+            divider(242.0f);
 
             // Copyright
-            g.setFont(juce::Font(10.5f));
-            g.setColour(juce::Colour(0xFF556677));
+            g.setFont(Theme::font(10.5f));
+            g.setColour(Theme::textTertiary);
             g.drawText("Copyright " + juce::String::fromUTF8("\xc2\xa9")
                        + " 2025 Il tuo nome. Tutti i diritti riservati.",
                        0, 254, getWidth(), 16, juce::Justification::centred);
@@ -704,7 +709,7 @@ class AudioSetupWindow : public juce::DocumentWindow
 public:
     AudioSetupWindow(juce::AudioDeviceManager& dm, MetronomeOutputPanel& metroOut)
         : DocumentWindow("Audio Setup",
-                         juce::Colour(0xFF0F0F1A),
+                         Theme::windowBg,
                          DocumentWindow::closeButton)
     {
         setUsingNativeTitleBar(true);

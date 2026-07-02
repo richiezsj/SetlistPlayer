@@ -1,6 +1,7 @@
 #pragma once
 #include <JuceHeader.h>
 #include "MetronomeEngine.h"
+#include "Theme.h"
 
 // ===========================================================================
 // MetronomeOutputPanel

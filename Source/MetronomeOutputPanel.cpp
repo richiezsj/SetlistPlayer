@@ -7,35 +7,31 @@ MetronomeOutputPanel::MetronomeOutputPanel(MetronomeEngine& metro)
     // Section header
     // -----------------------------------------------------------------------
     sectionLabel.setText("METRONOME OUTPUT", juce::dontSendNotification);
-    sectionLabel.setFont(juce::Font(11.0f).boldened());
-    sectionLabel.setColour(juce::Label::textColourId, juce::Colour(0xFF778899));
+    sectionLabel.setFont(Theme::sectionFont());
+    sectionLabel.setColour(juce::Label::textColourId, Theme::textTertiary);
     sectionLabel.setJustificationType(juce::Justification::centredLeft);
     addAndMakeVisible(sectionLabel);
 
     // -----------------------------------------------------------------------
     // MIDI mode / device
     // -----------------------------------------------------------------------
-    midiModeLabel.setText("Mode:", juce::dontSendNotification);
-    midiModeLabel.setFont(juce::Font(12.0f));
-    midiModeLabel.setColour(juce::Label::textColourId, juce::Colour(0xFF8899AA));
+    midiModeLabel.setText("Mode", juce::dontSendNotification);
+    midiModeLabel.setFont(Theme::font(12.0f));
+    midiModeLabel.setColour(juce::Label::textColourId, Theme::textSecondary);
     addAndMakeVisible(midiModeLabel);
 
     midiModeBox.addItem("Internal click", 1);
     midiModeBox.addItem("MIDI out only",  2);
     midiModeBox.addItem("Internal + MIDI", 3);
     midiModeBox.setSelectedId(1, juce::dontSendNotification);
-    midiModeBox.setColour(juce::ComboBox::backgroundColourId, juce::Colour(0xFF2A2A3A));
-    midiModeBox.setColour(juce::ComboBox::textColourId,       juce::Colours::white);
     midiModeBox.onChange = [this] { applyMidiMode(); };
     addAndMakeVisible(midiModeBox);
 
-    midiDeviceLabel.setText("MIDI device:", juce::dontSendNotification);
-    midiDeviceLabel.setFont(juce::Font(12.0f));
-    midiDeviceLabel.setColour(juce::Label::textColourId, juce::Colour(0xFF8899AA));
+    midiDeviceLabel.setText("Device", juce::dontSendNotification);
+    midiDeviceLabel.setFont(Theme::font(12.0f));
+    midiDeviceLabel.setColour(juce::Label::textColourId, Theme::textSecondary);
     addAndMakeVisible(midiDeviceLabel);
 
-    midiDeviceBox.setColour(juce::ComboBox::backgroundColourId, juce::Colour(0xFF2A2A3A));
-    midiDeviceBox.setColour(juce::ComboBox::textColourId,       juce::Colours::white);
     midiDeviceBox.onChange = [this] { applyMidiMode(); };
     addAndMakeVisible(midiDeviceBox);
 
@@ -49,17 +45,14 @@ MetronomeOutputPanel::MetronomeOutputPanel(MetronomeEngine& metro)
                                   std::function<void(int)> onChange)
     {
         lbl.setText(text, juce::dontSendNotification);
-        lbl.setFont(juce::Font(11.0f));
-        lbl.setColour(juce::Label::textColourId, juce::Colour(0xFF8899AA));
+        lbl.setFont(Theme::font(11.5f));
+        lbl.setColour(juce::Label::textColourId, Theme::textSecondary);
         addAndMakeVisible(lbl);
 
         s.setSliderStyle(juce::Slider::IncDecButtons);
         s.setTextBoxStyle(juce::Slider::TextBoxLeft, false, 52, 22);
         s.setRange(0, 127, 1);
         s.setValue(defaultVal, juce::dontSendNotification);
-        s.setColour(juce::Slider::textBoxTextColourId,       juce::Colours::white);
-        s.setColour(juce::Slider::textBoxBackgroundColourId, juce::Colour(0xFF1A1A2E));
-        s.setColour(juce::Slider::textBoxOutlineColourId,    juce::Colour(0xFF334455));
         s.onValueChange = [this, &s, onChange]
         {
             int val = (int)s.getValue();
@@ -78,18 +71,15 @@ MetronomeOutputPanel::MetronomeOutputPanel(MetronomeEngine& metro)
                     metronome.getMidiNoteBeat(),
                     [this](int n){ metronome.setMidiNoteBeat(n); });
 
-    midiChannelLabel.setText("Channel:", juce::dontSendNotification);
-    midiChannelLabel.setFont(juce::Font(11.0f));
-    midiChannelLabel.setColour(juce::Label::textColourId, juce::Colour(0xFF8899AA));
+    midiChannelLabel.setText("Channel", juce::dontSendNotification);
+    midiChannelLabel.setFont(Theme::font(11.5f));
+    midiChannelLabel.setColour(juce::Label::textColourId, Theme::textSecondary);
     addAndMakeVisible(midiChannelLabel);
 
     midiChannelSlider.setSliderStyle(juce::Slider::IncDecButtons);
     midiChannelSlider.setTextBoxStyle(juce::Slider::TextBoxLeft, false, 40, 22);
     midiChannelSlider.setRange(1, 16, 1);
     midiChannelSlider.setValue(metronome.getMidiChannel(), juce::dontSendNotification);
-    midiChannelSlider.setColour(juce::Slider::textBoxTextColourId,       juce::Colours::white);
-    midiChannelSlider.setColour(juce::Slider::textBoxBackgroundColourId, juce::Colour(0xFF1A1A2E));
-    midiChannelSlider.setColour(juce::Slider::textBoxOutlineColourId,    juce::Colour(0xFF334455));
     midiChannelSlider.onValueChange = [this]
     {
         metronome.setMidiChannel((int)midiChannelSlider.getValue());
@@ -99,17 +89,15 @@ MetronomeOutputPanel::MetronomeOutputPanel(MetronomeEngine& metro)
     // -----------------------------------------------------------------------
     // Count-in: preparation bars before the backing track starts
     // -----------------------------------------------------------------------
-    countInLabel.setText("Count-in:", juce::dontSendNotification);
-    countInLabel.setFont(juce::Font(12.0f));
-    countInLabel.setColour(juce::Label::textColourId, juce::Colour(0xFF8899AA));
+    countInLabel.setText("Count-in", juce::dontSendNotification);
+    countInLabel.setFont(Theme::font(12.0f));
+    countInLabel.setColour(juce::Label::textColourId, Theme::textSecondary);
     addAndMakeVisible(countInLabel);
 
     countInBox.addItem("Off",    1);   // itemId maps to bar count below
     countInBox.addItem("1 bar",  2);
     countInBox.addItem("2 bars", 3);
     countInBox.addItem("4 bars", 4);
-    countInBox.setColour(juce::ComboBox::backgroundColourId, juce::Colour(0xFF2A2A3A));
-    countInBox.setColour(juce::ComboBox::textColourId,       juce::Colours::white);
     countInBox.onChange = [this]
     {
         static const int barsForId[] = { 0, 0, 1, 2, 4 };  // index by selectedId
@@ -243,7 +231,7 @@ juce::String MetronomeOutputPanel::noteNumberToName(int n)
 void MetronomeOutputPanel::paint(juce::Graphics& g)
 {
     // Separator line under the section header
-    g.setColour(juce::Colour(0xFF2A3A4A));
+    g.setColour(Theme::separator);
     g.fillRect(0, sectionLabel.getBottom() + 2, getWidth(), 1);
 }
 

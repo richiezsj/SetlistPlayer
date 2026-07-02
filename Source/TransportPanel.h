@@ -1,6 +1,7 @@
 #pragma once
 #include <atomic>
 #include <JuceHeader.h>
+#include "Theme.h"
 #include "MetronomeEngine.h"
 #include "AudioPlayerEngine.h"
 #include "Project.h"
@@ -30,7 +31,7 @@ public:
         float w = b.getWidth();
 
         // Background
-        g.setColour(juce::Colour(0xFF111120));
+        g.setColour(juce::Colour(0xFF141416));
         g.fillRoundedRectangle(b, 2.0f);
 
         // Compute fill height from current level (0..1.5 mapped to full bar)
@@ -39,11 +40,11 @@ public:
 
         if (fillH > 0.5f)
         {
-            // Gradient: green → yellow → red
+            // Gradient: green → amber → red (system semantic colours)
             juce::ColourGradient grad(
-                juce::Colour(0xFF44FF88), b.getX(), b.getBottom(),
-                juce::Colour(0xFFFF3322), b.getX(), b.getY(), false);
-            grad.addColour(0.75, juce::Colour(0xFFFFCC00));
+                Theme::meterGreen, b.getX(), b.getBottom(),
+                Theme::meterRed,   b.getX(), b.getY(), false);
+            grad.addColour(0.72, Theme::meterAmber);
 
             juce::Rectangle<float> fill(b.getX(), b.getBottom() - fillH, w, fillH);
             g.setGradientFill(grad);
@@ -54,14 +55,14 @@ public:
         if (peakVal > 0.005f)
         {
             float peakY = b.getBottom() - juce::jlimit(0.0f, 1.0f, peakVal / 1.5f) * h;
-            g.setColour(peakVal > 1.0f ? juce::Colour(0xFFFF3322) : juce::Colour(0xFFFFFFAA));
+            g.setColour(peakVal > 1.0f ? Theme::meterRed : juce::Colours::white.withAlpha(0.7f));
             g.fillRect(b.getX(), peakY - 1.0f, w, 2.0f);
         }
 
         // Clip indicator at top
         if (peakVal >= 1.42f)
         {
-            g.setColour(juce::Colour(0xFFFF2200));
+            g.setColour(Theme::meterRed);
             g.fillRoundedRectangle(b.getX(), b.getY(), w, 5.0f, 2.0f);
         }
     }
@@ -133,7 +134,7 @@ public:
         float cy = bounds.getCentreY();
         float r  = juce::jmin(bounds.getWidth(), bounds.getHeight()) * 0.5f;
 
-        g.setColour(juce::Colour(0xFF2A2A3A));
+        g.setColour(Theme::controlBg);
         g.fillEllipse(cx - r, cy - r, r * 2.0f, r * 2.0f);
 
         const float startAngle = juce::MathConstants<float>::pi * 1.25f;
@@ -148,15 +149,15 @@ public:
                    (val < 0.0f ? curAngle : midAngle),
                    (val < 0.0f ? midAngle : curAngle),
                    true);
-        g.setColour(val == 0.0f ? juce::Colour(0xFF445566) : juce::Colour(0xFF4488FF));
+        g.setColour(val == 0.0f ? Theme::textTertiary : Theme::accent);
         g.strokePath(arc, juce::PathStrokeType(2.5f));
 
         float px = cx + (r - 7.0f) * std::cos(curAngle - juce::MathConstants<float>::halfPi);
         float py = cy + (r - 7.0f) * std::sin(curAngle - juce::MathConstants<float>::halfPi);
-        g.setColour(juce::Colours::white);
+        g.setColour(Theme::textPrimary);
         g.drawLine(cx, cy, px, py, 2.0f);
 
-        g.setColour(juce::Colour(0xFF334455));
+        g.setColour(Theme::controlBgHi);
         g.fillEllipse(cx - 3.0f, cy - 3.0f, 6.0f, 6.0f);
     }
 
@@ -193,22 +194,19 @@ public:
         : accentColour(accent)
     {
         nameLabel.setText(label, juce::dontSendNotification);
-        nameLabel.setFont(juce::Font(11.0f).boldened());
+        nameLabel.setFont(Theme::fontBold(10.0f).withExtraKerningFactor(0.08f));
         nameLabel.setJustificationType(juce::Justification::centred);
         nameLabel.setColour(juce::Label::textColourId, accent);
         addAndMakeVisible(nameLabel);
 
-        muteButton.setColour(juce::TextButton::buttonColourId,   juce::Colour(0xFF2A2A3A));
-        muteButton.setColour(juce::TextButton::buttonOnColourId, juce::Colour(0xFFAA3322));
-        muteButton.setColour(juce::TextButton::textColourOffId,  juce::Colours::white);
+        muteButton.setColour(juce::TextButton::buttonColourId,   Theme::controlBg);
+        muteButton.setColour(juce::TextButton::buttonOnColourId, Theme::destructive);
+        muteButton.setColour(juce::TextButton::textColourOffId,  Theme::textSecondary);
         muteButton.setColour(juce::TextButton::textColourOnId,   juce::Colours::white);
         muteButton.setClickingTogglesState(true);
         muteButton.onClick = [this]
         {
-            bool m = muteButton.getToggleState();
-            muteButton.setColour(juce::TextButton::buttonColourId,
-                                 m ? juce::Colour(0xFFAA3322) : juce::Colour(0xFF2A2A3A));
-            if (onMuteChanged) onMuteChanged(m);
+            if (onMuteChanged) onMuteChanged(muteButton.getToggleState());
         };
         addAndMakeVisible(muteButton);
 
@@ -218,7 +216,8 @@ public:
         volSlider.setValue(1.0, juce::dontSendNotification);
         volSlider.setDoubleClickReturnValue(true, 1.0);
         volSlider.setColour(juce::Slider::thumbColourId, accent);
-        volSlider.setColour(juce::Slider::trackColourId, juce::Colour(0xFF334455));
+        volSlider.setColour(juce::Slider::trackColourId, accent);
+        volSlider.setColour(juce::Slider::backgroundColourId, Theme::controlBg);
         volSlider.onValueChange = [this]
         {
             if (onVolumeChanged) onVolumeChanged((float)volSlider.getValue());
@@ -236,10 +235,12 @@ public:
 
     void paint(juce::Graphics& g) override
     {
-        g.setColour(juce::Colour(0xFF1A1A2E));
-        g.fillRoundedRectangle(getLocalBounds().toFloat(), 6.0f);
-        g.setColour(accentColour.withAlpha(0.35f));
-        g.drawRoundedRectangle(getLocalBounds().toFloat().reduced(0.5f), 6.0f, 1.2f);
+        auto r = getLocalBounds().toFloat();
+        g.setColour(Theme::panelBgAlt);
+        g.fillRoundedRectangle(r, Theme::radius);
+        // A thin accent bar along the top edge marks the channel identity.
+        g.setColour(accentColour);
+        g.fillRoundedRectangle(r.getX() + 8.0f, r.getY() + 6.0f, r.getWidth() - 16.0f, 2.0f, 1.0f);
     }
 
     void resized() override
