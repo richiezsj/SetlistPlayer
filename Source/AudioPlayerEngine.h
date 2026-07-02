@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 #include <JuceHeader.h>
 
 class AudioPlayerEngine : public juce::AudioSource
@@ -38,10 +39,10 @@ private:
     std::unique_ptr<juce::AudioFormatReaderSource> readerSource;
     juce::AudioTransportSource transportSource;
 
-    bool fileLoaded = false;
-    float gain  = 1.0f;
-    float pan   = 0.0f;
-    bool  muted = false;
+    std::atomic<bool>  fileLoaded { false };
+    std::atomic<float> gain  { 1.0f };
+    std::atomic<float> pan   { 0.0f };
+    std::atomic<bool>  muted  { false };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPlayerEngine)
 };

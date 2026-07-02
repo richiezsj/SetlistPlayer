@@ -99,9 +99,8 @@ MetronomeOutputPanel::MetronomeOutputPanel(MetronomeEngine& metro)
 
 MetronomeOutputPanel::~MetronomeOutputPanel()
 {
-    metronome.setMidiOutput(nullptr);
     metronome.setUseMidi(false);
-    midiOutput.reset();
+    metronome.setMidiOutputDevice(nullptr);
 }
 
 void MetronomeOutputPanel::refreshMidiDevices()
@@ -140,20 +139,13 @@ void MetronomeOutputPanel::applyMidiMode()
         auto devices = juce::MidiOutput::getAvailableDevices();
         int idx = midiDeviceBox.getSelectedId() - 1;
         if (idx >= 0 && idx < devices.size())
-        {
-            midiOutput = juce::MidiOutput::openDevice(devices[idx].identifier);
-            metronome.setMidiOutput(midiOutput.get());
-        }
+            metronome.setMidiOutputDevice(juce::MidiOutput::openDevice(devices[idx].identifier));
         else
-        {
-            midiOutput.reset();
-            metronome.setMidiOutput(nullptr);
-        }
+            metronome.setMidiOutputDevice(nullptr);
     }
     else
     {
-        metronome.setMidiOutput(nullptr);
-        midiOutput.reset();
+        metronome.setMidiOutputDevice(nullptr);
     }
 }
 

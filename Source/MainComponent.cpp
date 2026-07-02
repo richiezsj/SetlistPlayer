@@ -210,17 +210,24 @@ bool MainComponent::perform(const juce::ApplicationCommandTarget::InvocationInfo
 // ============================================================
 // Project management
 // ============================================================
+bool MainComponent::canDiscardCurrentProject()
+{
+    if (!projectModified) return true;
+
+    // showYesNoCancelBox: 1 = Yes (first button), 2 = No (middle), 0 = Cancel.
+    auto result = juce::NativeMessageBox::showYesNoCancelBox(
+        juce::MessageBoxIconType::QuestionIcon, "Unsaved Changes",
+        "Save changes to the current project before continuing?",
+        nullptr, nullptr);
+
+    if (result == 1) { cmdSaveProject(); return true; }  // Yes  → save, proceed
+    if (result == 2) return true;                        // No   → discard, proceed
+    return false;                                        // Cancel → abort
+}
+
 void MainComponent::cmdNewProject()
 {
-    if (projectModified)
-    {
-        auto result = juce::NativeMessageBox::showYesNoCancelBox(
-            juce::MessageBoxIconType::QuestionIcon, "New Project",
-            "Save current project before creating a new one?",
-            nullptr, nullptr);
-        if (result == 1) cmdSaveProject();
-        else if (result == 2) return;
-    }
+    if (!canDiscardCurrentProject()) return;
 
     onStopTriggered();
     project = Project();
@@ -234,6 +241,8 @@ void MainComponent::cmdNewProject()
 
 void MainComponent::cmdOpenProject()
 {
+    if (!canDiscardCurrentProject()) return;
+
     auto chooser = std::make_shared<juce::FileChooser>(
         "Open Setlist Project",
         juce::File::getSpecialLocation(juce::File::userDocumentsDirectory),

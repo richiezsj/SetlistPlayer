@@ -15,8 +15,16 @@ void MetronomeEngine::releaseResources() {}
 
 void MetronomeEngine::setBpm(double newBpm)
 {
-    bpm = juce::jlimit(20.0, 300.0, newBpm);
-    samplesPerBeat = (60.0 / bpm) * sampleRate;
+    bpm.store(juce::jlimit(20.0, 300.0, newBpm));
+    // samplesPerBeat is recomputed on the audio thread each block from bpm.
+}
+
+void MetronomeEngine::setMidiOutputDevice(std::unique_ptr<juce::MidiOutput> device)
+{
+    // Blocks briefly if the audio thread is mid-send, guaranteeing the old
+    // device is never freed while in use.
+    const juce::ScopedLock sl(midiLock);
+    midiOutput = std::move(device);
 }
 
 void MetronomeEngine::setTimeSignature(int num, int den)
@@ -74,12 +82,19 @@ void MetronomeEngine::getNextAudioBlock(const juce::AudioSourceChannelInfo& info
             isDownBeatClick = isDown;
             clickEnvelope   = 1.0f;
 
-            if (useMidi && midiOut)
+            if (useMidi.load())
             {
-                juce::uint8 note     = isDown ? (juce::uint8)midiNoteDown : (juce::uint8)midiNoteBeat;
-                juce::uint8 velocity = isDown ? (juce::uint8)100          : (juce::uint8)70;
-                auto msg = juce::MidiMessage::noteOn(midiChannel, note, velocity);
-                midiOut->sendMessageNow(msg);
+                // Try-lock: never blocks the audio thread. If the device is
+                // being swapped on the message thread we simply skip this click.
+                const juce::ScopedTryLock stl(midiLock);
+                if (stl.isLocked() && midiOutput != nullptr)
+                {
+                    juce::uint8 note     = isDown ? (juce::uint8)midiNoteDown.load()
+                                                  : (juce::uint8)midiNoteBeat.load();
+                    juce::uint8 velocity = isDown ? (juce::uint8)100 : (juce::uint8)70;
+                    midiOutput->sendMessageNow(
+                        juce::MidiMessage::noteOn(midiChannel.load(), note, velocity));
+                }
             }
 
             if (onBeat) onBeat(currentBeat, currentBar);

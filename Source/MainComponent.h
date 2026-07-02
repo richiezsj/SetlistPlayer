@@ -33,6 +33,11 @@ public:
     void getCommandInfo(juce::CommandID commandID, juce::ApplicationCommandInfo& result) override;
     bool perform(const juce::ApplicationCommandTarget::InvocationInfo& info) override;
 
+    // Prompts to save when there are unsaved changes. Returns true if the
+    // caller may proceed (nothing to save, saved, or user chose to discard),
+    // false if the user cancelled. Used by New / Open / Quit.
+    bool canDiscardCurrentProject();
+
 private:
     enum CommandIDs
     {

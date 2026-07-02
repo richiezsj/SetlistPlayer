@@ -29,10 +29,11 @@ public:
     float getPan()   const { return pan; }
     bool  isMuted()  const { return muted; }
 
-    // MIDI out
-    void setMidiOutput(juce::MidiOutput* out) { midiOut = out; }
+    // MIDI out — the engine takes ownership of the device so it can be
+    // swapped safely with respect to the audio thread (see midiLock).
     void setUseMidi(bool b)     { useMidi     = b; }
     void setUseInternal(bool b) { useInternal = b; }
+    void setMidiOutputDevice(std::unique_ptr<juce::MidiOutput> device);
 
     // MIDI note configuration
     void setMidiChannel(int ch)      { midiChannel  = juce::jlimit(1, 16, ch); }
@@ -49,27 +50,32 @@ private:
     void generateClick(juce::AudioBuffer<float>& buffer, int sample, bool isDownBeat);
     void generateMidiBeat(juce::MidiBuffer& midi, int sampleOffset, bool isDownBeat);
 
-    double sampleRate     = 44100.0;
-    double bpm            = 120.0;
-    int numerator         = 4;
-    int denominator       = 4;
+    double sampleRate     = 44100.0;          // audio-thread owned (set in prepareToPlay)
+    std::atomic<double> bpm         { 120.0 };
+    std::atomic<int>    numerator   { 4 };
+    std::atomic<int>    denominator { 4 };
 
+    // Audio-thread only
     double samplesPerBeat = 0.0;
     double sampleCounter  = 0.0;
     int currentBeat       = 0;
     int currentBar        = 0;
 
-    std::atomic<bool> playing { false };
-    bool useMidi     = false;
-    bool useInternal = true;
-    int  midiChannel  = 10;   // GM percussion channel
-    int  midiNoteDown = 41;   // F2  — downbeat
-    int  midiNoteBeat = 41;   // F2  — other beats (same default)
-    float gain  = 1.0f;
-    float pan   = 0.0f;
-    bool  muted = false;
+    std::atomic<bool>  playing     { false };
+    std::atomic<bool>  useMidi     { false };
+    std::atomic<bool>  useInternal { true };
+    std::atomic<int>   midiChannel  { 10 };   // GM percussion channel
+    std::atomic<int>   midiNoteDown { 41 };   // F2 — downbeat
+    std::atomic<int>   midiNoteBeat { 41 };   // F2 — other beats (same default)
+    std::atomic<float> gain  { 1.0f };
+    std::atomic<float> pan   { 0.0f };
+    std::atomic<bool>  muted { false };
 
-    juce::MidiOutput* midiOut = nullptr;
+    // MIDI output device is owned here so it outlives any UI panel that
+    // configures it. Swapped under midiLock; the audio thread touches it only
+    // via a try-lock, so it never blocks and never dereferences a freed ptr.
+    std::unique_ptr<juce::MidiOutput> midiOutput;
+    juce::CriticalSection midiLock;
 
     // Click synthesis
     float clickDuration = 0.02f; // seconds

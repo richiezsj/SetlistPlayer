@@ -17,7 +17,16 @@ public:
 
     void shutdown() override { mainWindow = nullptr; }
 
-    void systemRequestedQuit() override { quit(); }
+    void systemRequestedQuit() override
+    {
+        // Give the user a chance to save unsaved changes before quitting.
+        if (mainWindow != nullptr)
+            if (auto* mc = dynamic_cast<MainComponent*>(mainWindow->getContentComponent()))
+                if (! mc->canDiscardCurrentProject())
+                    return;
+
+        quit();
+    }
 
     void anotherInstanceStarted(const juce::String&) override {}
 

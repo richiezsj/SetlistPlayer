@@ -39,7 +39,7 @@ private:
     juce::Label    midiChannelLabel, midiNoteDownLabel, midiNoteBeatLabel;
     juce::Slider   midiChannelSlider, midiNoteDownSlider, midiNoteBeatSlider;
 
-    std::unique_ptr<juce::MidiOutput> midiOutput;
+    // The open MidiOutput is owned by MetronomeEngine, not here.
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MetronomeOutputPanel)
 };
