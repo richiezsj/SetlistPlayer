@@ -95,6 +95,30 @@ MetronomeOutputPanel::MetronomeOutputPanel(MetronomeEngine& metro)
         metronome.setMidiChannel((int)midiChannelSlider.getValue());
     };
     addAndMakeVisible(midiChannelSlider);
+
+    // -----------------------------------------------------------------------
+    // Count-in: preparation bars before the backing track starts
+    // -----------------------------------------------------------------------
+    countInLabel.setText("Count-in:", juce::dontSendNotification);
+    countInLabel.setFont(juce::Font(12.0f));
+    countInLabel.setColour(juce::Label::textColourId, juce::Colour(0xFF8899AA));
+    addAndMakeVisible(countInLabel);
+
+    countInBox.addItem("Off",    1);   // itemId maps to bar count below
+    countInBox.addItem("1 bar",  2);
+    countInBox.addItem("2 bars", 3);
+    countInBox.addItem("4 bars", 4);
+    countInBox.setColour(juce::ComboBox::backgroundColourId, juce::Colour(0xFF2A2A3A));
+    countInBox.setColour(juce::ComboBox::textColourId,       juce::Colours::white);
+    countInBox.onChange = [this]
+    {
+        static const int barsForId[] = { 0, 0, 1, 2, 4 };  // index by selectedId
+        metronome.setCountInBars(barsForId[countInBox.getSelectedId()]);
+    };
+    // Reflect the engine's current value (Off by default).
+    const int bars = metronome.getCountInBars();
+    countInBox.setSelectedId(bars >= 4 ? 4 : bars + 1, juce::dontSendNotification);
+    addAndMakeVisible(countInBox);
 }
 
 MetronomeOutputPanel::~MetronomeOutputPanel()
@@ -197,4 +221,9 @@ void MetronomeOutputPanel::resized()
     auto beatRow = area.removeFromTop(24);
     midiNoteBeatLabel.setBounds(beatRow.removeFromLeft(labelW));
     midiNoteBeatSlider.setBounds(beatRow.removeFromLeft(140));
+
+    area.removeFromTop(6);
+    auto countInRow = area.removeFromTop(24);
+    countInLabel.setBounds(countInRow.removeFromLeft(labelW));
+    countInBox.setBounds(countInRow.removeFromLeft(120));
 }

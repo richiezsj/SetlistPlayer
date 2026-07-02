@@ -37,6 +37,15 @@ MainComponent::MainComponent()
     // Posted on the message thread by the engine, so UI access here is safe.
     audioPlayer.onPlaybackFinished = [this] { onNextSong(); };
 
+    // Count-in: the engine calls this on the first real downbeat, after the
+    // preparation bars. Start the base then (guard against a stop during the
+    // count-in, when the metronome is no longer playing).
+    metronome.onCountInFinished = [this]
+    {
+        if (metronome.isPlaying() && audioPlayer.isFileLoaded())
+            audioPlayer.play();
+    };
+
     // Song editor panel (right)
     editorPanel = std::make_unique<SongEditorPanel>();
     editorPanel->onSongChanged = [this]
@@ -81,9 +90,10 @@ MainComponent::~MainComponent()
     mixerSource.onLevelAudio = nullptr;
     mixerSource.onLevelMetro = nullptr;
 
-    // Clear auto-advance callback so a late finish notification can't reach a
-    // half-destroyed component.
+    // Clear auto-advance / count-in callbacks so a late notification can't
+    // reach a half-destroyed component.
     audioPlayer.onPlaybackFinished = nullptr;
+    metronome.onCountInFinished    = nullptr;
 
     // Stop audio thread before any member is destroyed
     deviceManager.removeAudioCallback(&sourcePlayer);
@@ -357,7 +367,8 @@ void MainComponent::onPlayTriggered()
     metronome.setTimeSignature(song->beatsPerBar, song->beatUnit);
     metronome.start();
 
-    if (audioPlayer.isFileLoaded())
+    // With a count-in the base is started by onCountInFinished; otherwise now.
+    if (metronome.getCountInBars() == 0 && audioPlayer.isFileLoaded())
         audioPlayer.play();
 }
 

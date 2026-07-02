@@ -36,6 +36,10 @@ public:
     void setUseInternal(bool b) { useInternal = b; }
     void setMidiOutputDevice(std::unique_ptr<juce::MidiOutput> device);
 
+    // Count-in: play this many bars before the song proper begins. 0 = off.
+    void setCountInBars(int bars) { countInBars = juce::jlimit(0, 8, bars); }
+    int  getCountInBars() const   { return countInBars; }
+
     // MIDI note configuration
     void setMidiChannel(int ch)      { midiChannel  = juce::jlimit(1, 16, ch); }
     void setMidiNoteDown(int note)   { midiNoteDown = juce::jlimit(0, 127, note); }
@@ -46,6 +50,9 @@ public:
 
     // Callbacks
     std::function<void(int beat, int bar)> onBeat;
+    // Fired (on the message thread) at the first real downbeat, once the
+    // count-in bars have elapsed. Used to start the backing track in time.
+    std::function<void()> onCountInFinished;
 
 private:
     void generateClick(juce::AudioBuffer<float>& buffer, int sample, bool isDownBeat);
@@ -68,9 +75,16 @@ private:
     int currentBeat       = 0;
     int currentBar        = 0;
 
+    // Count-in state (audio-thread only). countInBeatsLeft counts down the
+    // preparation clicks; countInFinishing marks the next beat boundary as the
+    // first real downbeat, where onCountInFinished fires.
+    int  countInBeatsLeft = 0;
+    bool countInFinishing = false;
+
     std::atomic<bool>  playing     { false };
     std::atomic<bool>  useMidi     { false };
     std::atomic<bool>  useInternal { true };
+    std::atomic<int>   countInBars { 0 };
     std::atomic<int>   midiChannel  { 10 };   // GM percussion channel
     std::atomic<int>   midiNoteDown { 41 };   // F2 — downbeat
     std::atomic<int>   midiNoteBeat { 41 };   // F2 — other beats (same default)

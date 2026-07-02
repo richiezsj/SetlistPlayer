@@ -21,7 +21,7 @@ public:
     void resized() override;
 
     // Preferred height for the controls, used by the host window layout.
-    static constexpr int preferredHeight = 184;
+    static constexpr int preferredHeight = 214;
 
 private:
     void refreshMidiDevices();
@@ -38,6 +38,9 @@ private:
 
     juce::Label    midiChannelLabel, midiNoteDownLabel, midiNoteBeatLabel;
     juce::Slider   midiChannelSlider, midiNoteDownSlider, midiNoteBeatSlider;
+
+    juce::Label    countInLabel;
+    juce::ComboBox countInBox;
 
     // The open MidiOutput is owned by MetronomeEngine, not here.
 

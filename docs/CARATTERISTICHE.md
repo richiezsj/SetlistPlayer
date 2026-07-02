@@ -114,7 +114,7 @@ Legenda: ✅ implementato · 🟡 parziale/limitato · ⬜ non presente
 - ✅ Gain / pan / mute dedicati
 - ✅ Callback `onBeat` per i LED dei movimenti
 - ✅ Il **denominatore del metro è rispettato** nel timing: `samplesPerBeat = (60/bpm)·sr·(4/beatUnit)`, quindi 6/8, 3/8, 6/4 hanno il feel corretto
-- ⬜ Count-in / pre-roll
+- ✅ Count-in / pre-roll — 0/1/2/4 battute di preparazione (selettore in Audio Setup); la base parte sul primo downbeat "vero" via callback. I LED mostrano il conteggio
 
 ### Uscita MIDI
 - ✅ Modalità: click interno / solo MIDI / interno + MIDI
@@ -166,7 +166,7 @@ Ordinati per priorità.
 4. ~~**Denominatore del metro nel timing**~~ → **Fatto.** `samplesPerBeat = (60/bpm)·sr·(4/denominator)`; il BPM resta riferito alla semiminima e i tempi come 6/8, 3/8, 6/4 hanno la durata corretta. Il denominatore è protetto (`jmax(1, den)`) contro la divisione per zero sull'audio thread.
 5. ~~**MIDI RT-safe**~~ → **Fatto.** L'audio thread accoda gli eventi in una FIFO lock-free single-producer/single-consumer (`juce::AbstractFifo`); un `HighResolutionTimer` (1 ms) la drena e invia via `sendMessageNow` sotto `midiLock`, fuori dal thread audio (che ora non tocca più né il lock né il device). Aggiunto `noteOff` della nota precedente a ogni beat e `allNotesOff` allo stop.
 6. ~~**VU meter — doppio gain**~~ → **Fatto.** `ChannelStrip::pushLevel` non rimoltiplica più per il fader: l'RMS del `MixerSource` è già post-gain, quindi il meter riflette l'uscita reale. Rimosso anche l'accesso non thread-safe allo `Slider` dal thread audio.
-7. **Count-in / pre-roll** — battute di preparazione prima dell'avvio della base (già in roadmap README).
+7. ~~**Count-in / pre-roll**~~ → **Fatto.** `MetronomeEngine` suona 0/1/2/4 battute di preparazione (selettore "Count-in" in Audio Setup); al primo downbeat successivo fa partire la base tramite `onCountInFinished` (postato sul message thread, con guardia se si preme Stop durante il count-in). I LED dei movimenti mostrano il conteggio.
 8. ~~**Auto-avanzamento**~~ → **Fatto.** `AudioPlayerEngine::onPlaybackFinished` collegato: a fine base la selezione avanza al brano successivo (riusa `onNextSong`, nessun auto-play). La notifica è protetta da un latch (`finishedNotified`) per sparare una sola volta e viene azzerata alla distruzione della UI.
 
 ### Priorità bassa — funzionalità / pulizia
@@ -197,5 +197,6 @@ Ordinati per priorità.
 | 2026-07-02 | Risolto fix #6 (priorità media): rimosso il doppio gain sul VU meter (e la lettura dello Slider dal thread audio) |
 | 2026-07-02 | Risolto fix #8 (priorità media): auto-avanzamento al brano successivo a fine base |
 | 2026-07-02 | Risolto fix #5 (priorità media): invio MIDI RT-safe via FIFO lock-free + HighResolutionTimer, con noteOff/allNotesOff |
+| 2026-07-02 | Risolto fix #7 (priorità media): count-in di 0/1/2/4 battute prima dell'avvio della base |
 </content>
 </invoke>

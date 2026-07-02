@@ -55,6 +55,11 @@ void MetronomeEngine::start()
     currentBar    = 0;
     clickCountdown = 0;
     lastMidiNote   = -1;   // no note is sounding yet
+
+    // Arm the count-in: countInBars whole bars of clicks before the song.
+    countInBeatsLeft = countInBars.load() * numerator.load();
+    countInFinishing = false;
+
     playing = true;
 }
 
@@ -101,6 +106,18 @@ void MetronomeEngine::getNextAudioBlock(const juce::AudioSourceChannelInfo& info
     {
         if (sampleCounter <= 0.0)
         {
+            // The count-in has just elapsed: this boundary is the first real
+            // downbeat. Realign the bar/beat and start the backing track.
+            if (countInFinishing)
+            {
+                countInFinishing = false;
+                currentBeat = 0;
+                currentBar  = 0;
+                if (onCountInFinished)
+                    juce::MessageManager::callAsync([this]
+                        { if (onCountInFinished) onCountInFinished(); });
+            }
+
             bool isDown = (currentBeat == 0);
             clickCountdown  = isDown ? clickSamplesHi : clickSamplesLo;
             isDownBeatClick = isDown;
@@ -133,6 +150,12 @@ void MetronomeEngine::getNextAudioBlock(const juce::AudioSourceChannelInfo& info
                 currentBeat = 0;
                 currentBar++;
             }
+
+            // Count down the preparation clicks; when the last one has played,
+            // arm the transition so the next boundary starts the song.
+            if (countInBeatsLeft > 0 && --countInBeatsLeft == 0)
+                countInFinishing = true;
+
             sampleCounter += samplesPerBeat;
         }
 
