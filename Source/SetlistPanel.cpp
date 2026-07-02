@@ -9,6 +9,7 @@ SetlistPanel::SetlistPanel()
 
     listBox.setModel(this);
     listBox.setMultipleSelectionEnabled(false);
+    listBox.onReorder = [this](int from, int to) { reorderSong(from, to); };
     listBox.setColour(juce::ListBox::backgroundColourId, juce::Colour(0xFF181828));
     listBox.setColour(juce::ListBox::outlineColourId, juce::Colour(0xFF334455));
     listBox.setRowHeight(48);
@@ -152,7 +153,26 @@ void SetlistPanel::listBoxItemClicked(int row, const juce::MouseEvent&)
 
 juce::var SetlistPanel::getDragSourceDescription(const juce::SparseSet<int>& rows)
 {
-    return juce::String(rows[0]);
+    // The dragged row index, consumed by SongListBox::itemDropped.
+    return rows.size() > 0 ? juce::var(rows[0]) : juce::var();
+}
+
+void SetlistPanel::reorderSong(int from, int to)
+{
+    if (project == nullptr) return;
+    if (from < 0 || from >= project->songs.size()) return;
+
+    // getInsertionIndexForPosition returns 0..numRows; once the source row is
+    // removed, a target past it shifts down by one.
+    to = juce::jlimit(0, project->songs.size(), to);
+    if (to > from) --to;
+    if (to == from) return;
+
+    project->moveSong(from, to);
+    refreshList();
+    listBox.selectRow(to);
+    if (onSongSelected)   onSongSelected(to);
+    if (onSetlistChanged) onSetlistChanged();
 }
 
 void SetlistPanel::addSong()

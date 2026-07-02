@@ -97,7 +97,7 @@ Legenda: ✅ implementato · 🟡 parziale/limitato · ⬜ non presente
 - ✅ Lista brani con numero traccia, nome, BPM, metro e icona base
 - ✅ Aggiungi / rimuovi brano
 - ✅ Riordino con pulsanti ▲ / ▼
-- 🟡 Riordino drag-and-drop — `getDragSourceDescription` è presente ma **manca il drop target**: il trascinamento non riordina davvero (il README lo cita come funzionante)
+- ✅ Riordino drag-and-drop — `SetlistPanel` è un `DragAndDropContainer` e la `ListBox` (`SongListBox`) è un `DragAndDropTarget` che calcola l'indice di inserimento e riordina davvero
 - ✅ Selezione brano → carica editor, transport e base audio
 
 ### Player basi
@@ -172,7 +172,7 @@ Ordinati per priorità.
 ### Priorità bassa — funzionalità / pulizia
 9. **Persistere il mix** (volume/pan/mute) e le impostazioni MIDI nel progetto o in `PropertiesFile`.
 10. ~~**Path audio relativi**~~ → **Fatto.** Salvato `audioFileRelative` (relativo alla cartella del `.setlist`) accanto al path assoluto di fallback; in apertura si risolve il relativo e, se manca, si ricade sull'assoluto. `Project::missingAudioFiles()` + avviso all'apertura per i brani con base non trovata.
-11. **Drag-and-drop reale** nella scaletta (o rimuovere `getDragSourceDescription` e aggiornare il README).
+11. ~~**Drag-and-drop reale**~~ → **Fatto.** Trascinando una riga la scaletta si riordina davvero (`SongListBox` come `DragAndDropTarget`, indice via `getInsertionIndexForPosition` con correzione dello shift). I pulsanti ▲/▼ restano disponibili.
 12. **Resume della base** — `play()` non dovrebbe forzare `setPosition(0)` se si vuole vera pausa.
 13. ~~**Pulizia dead code**~~ → **Fatto.** Rimosse le dichiarazioni inutilizzate `MetronomeEngine::generateClick` / `generateMidiBeat` (la sintesi è inline in `getNextAudioBlock`).
 14. Campi **note** e **tonalità** per brano; **export PDF** della scaletta (roadmap README).
