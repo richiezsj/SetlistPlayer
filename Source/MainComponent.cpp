@@ -32,6 +32,11 @@ MainComponent::MainComponent()
     transportPanel->onNextSong = [this] { onNextSong(); };
     addAndMakeVisible(*transportPanel);
 
+    // Auto-advance: when the backing track reaches its end, move the selection
+    // to the next song (does not auto-play — the musician presses Play/Space).
+    // Posted on the message thread by the engine, so UI access here is safe.
+    audioPlayer.onPlaybackFinished = [this] { onNextSong(); };
+
     // Song editor panel (right)
     editorPanel = std::make_unique<SongEditorPanel>();
     editorPanel->onSongChanged = [this]
@@ -75,6 +80,10 @@ MainComponent::~MainComponent()
     // Clear level callbacks before audio thread is stopped
     mixerSource.onLevelAudio = nullptr;
     mixerSource.onLevelMetro = nullptr;
+
+    // Clear auto-advance callback so a late finish notification can't reach a
+    // half-destroyed component.
+    audioPlayer.onPlaybackFinished = nullptr;
 
     // Stop audio thread before any member is destroyed
     deviceManager.removeAudioCallback(&sourcePlayer);

@@ -44,5 +44,10 @@ private:
     std::atomic<float> pan   { 0.0f };
     std::atomic<bool>  muted  { false };
 
+    // Latches true once onPlaybackFinished has been posted, so the callback
+    // fires exactly once per playback (the stream stays "finished" for many
+    // blocks). Reset on play()/loadFile().
+    std::atomic<bool>  finishedNotified { false };
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPlayerEngine)
 };

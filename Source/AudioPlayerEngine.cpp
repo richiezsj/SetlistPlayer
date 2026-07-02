@@ -48,10 +48,11 @@ void AudioPlayerEngine::getNextAudioBlock(const juce::AudioSourceChannelInfo& in
         }
     }
 
-    // Notify finish
+    // Notify finish exactly once: the stream reports "finished" for many
+    // blocks, so latch to avoid flooding the message thread with callbacks.
     if (!transportSource.isPlaying() && transportSource.hasStreamFinished())
     {
-        if (onPlaybackFinished)
+        if (!finishedNotified.exchange(true) && onPlaybackFinished)
             juce::MessageManager::callAsync([this] { onPlaybackFinished(); });
     }
 }
@@ -75,6 +76,7 @@ bool AudioPlayerEngine::loadFile(const juce::File& file)
     readerSource = std::make_unique<juce::AudioFormatReaderSource>(reader, true);
     transportSource.setSource(readerSource.get(), 0, nullptr, reader->sampleRate, 2);
     fileLoaded = true;
+    finishedNotified = false;
     return true;
 }
 
@@ -90,6 +92,7 @@ void AudioPlayerEngine::play()
 {
     if (fileLoaded)
     {
+        finishedNotified = false;
         transportSource.setPosition(0.0);
         transportSource.start();
     }

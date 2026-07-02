@@ -106,7 +106,7 @@ Legenda: ✅ implementato · 🟡 parziale/limitato · ⬜ non presente
 - ✅ Indicatore posizione `m:ss / m:ss`
 - 🟡 Pausa/ripresa — `pause()` esiste ma `play()` riparte sempre da 0 (nessun resume)
 - ⬜ Seek / barra di scorrimento / waveform
-- ⬜ Auto-avanzamento a fine traccia (`onPlaybackFinished` presente ma non collegato)
+- ✅ Auto-avanzamento a fine traccia — a fine base la selezione passa al brano successivo (senza auto-play; il musicista preme Play/Spazio). Notifica sparata una sola volta (latch) e postata sul message thread
 
 ### Metronomo
 - ✅ Click sintetizzato con accento sul downbeat (1800 Hz / 1200 Hz)
@@ -167,7 +167,7 @@ Ordinati per priorità.
 5. **MIDI RT-safe** — accodare i messaggi in un `MidiBuffer` e inviarli fuori dal thread audio (o via `MidiOutput::sendBlockOfMessages`); aggiungere `noteOff`.
 6. ~~**VU meter — doppio gain**~~ → **Fatto.** `ChannelStrip::pushLevel` non rimoltiplica più per il fader: l'RMS del `MixerSource` è già post-gain, quindi il meter riflette l'uscita reale. Rimosso anche l'accesso non thread-safe allo `Slider` dal thread audio.
 7. **Count-in / pre-roll** — battute di preparazione prima dell'avvio della base (già in roadmap README).
-8. **Auto-avanzamento** — collegare `AudioPlayerEngine::onPlaybackFinished` per passare al brano successivo a fine base.
+8. ~~**Auto-avanzamento**~~ → **Fatto.** `AudioPlayerEngine::onPlaybackFinished` collegato: a fine base la selezione avanza al brano successivo (riusa `onNextSong`, nessun auto-play). La notifica è protetta da un latch (`finishedNotified`) per sparare una sola volta e viene azzerata alla distruzione della UI.
 
 ### Priorità bassa — funzionalità / pulizia
 9. **Persistere il mix** (volume/pan/mute) e le impostazioni MIDI nel progetto o in `PropertiesFile`.
@@ -195,5 +195,6 @@ Ordinati per priorità.
 | 2026-07-02 | Risolti i 3 fix ad alta priorità: thread-safety device MIDI, parametri condivisi atomici, prompt di salvataggio su Apri/Uscita |
 | 2026-07-02 | Risolto fix #4 (priorità media): il denominatore del metro è ora rispettato nel timing del beat |
 | 2026-07-02 | Risolto fix #6 (priorità media): rimosso il doppio gain sul VU meter (e la lettura dello Slider dal thread audio) |
+| 2026-07-02 | Risolto fix #8 (priorità media): auto-avanzamento al brano successivo a fine base |
 </content>
 </invoke>
