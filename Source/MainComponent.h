@@ -60,6 +60,7 @@ private:
     void onSongSelected(int index);
     void onPlayTriggered();
     void onStopTriggered();
+    void onPauseToggled();
     void onNextSong();
     void updateTitle();
 
@@ -89,6 +90,12 @@ private:
     Project project;
     int  selectedSongIndex = -1;
     bool projectModified   = false;
+
+    // Pause/resume state. baseWasPlayingAtPause remembers whether the backing
+    // track was running, so resume only restarts it if it was (e.g. not during
+    // a count-in, where the base has not started yet).
+    bool paused = false;
+    bool baseWasPlayingAtPause = false;
 
     // -------------------------------------------------------
     // Audio — declared before MixerSource so they are

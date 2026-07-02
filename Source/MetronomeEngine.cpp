@@ -83,6 +83,18 @@ void MetronomeEngine::reset()
     currentBar  = 0;
 }
 
+void MetronomeEngine::pause()
+{
+    // Same as stop() (which already keeps sampleCounter/beat/bar); the beat
+    // position is preserved so resume() continues in time.
+    stop();
+}
+
+void MetronomeEngine::resume()
+{
+    playing = true;   // no counter reset — continue where paused
+}
+
 void MetronomeEngine::getNextAudioBlock(const juce::AudioSourceChannelInfo& info)
 {
     if (!playing)

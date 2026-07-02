@@ -36,6 +36,12 @@ TransportPanel::TransportPanel(MetronomeEngine& metro, AudioPlayerEngine& player
     playButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     addAndMakeVisible(playButton);
 
+    pauseButton.setButtonText(juce::String::fromUTF8("\xe2\x9d\x9a") + "  PAUSE");  // ❚❚-ish
+    pauseButton.onClick = [this] { if (onPauseResume) onPauseResume(); };
+    pauseButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xFF665522));
+    pauseButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    addAndMakeVisible(pauseButton);
+
     stopButton.setButtonText(juce::String::fromUTF8("\xe2\x96\xa0") + "  STOP");
     stopButton.onClick = [this] { stopClicked(); };
     stopButton.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xFF662222));
@@ -186,8 +192,9 @@ void TransportPanel::resized()
     area.removeFromTop(8);
 
     auto btnRow = area.removeFromTop(44);
-    int bw = btnRow.getWidth() / 3;
+    int bw = btnRow.getWidth() / 4;
     playButton.setBounds(btnRow.removeFromLeft(bw).reduced(4, 0));
+    pauseButton.setBounds(btnRow.removeFromLeft(bw).reduced(4, 0));
     stopButton.setBounds(btnRow.removeFromLeft(bw).reduced(4, 0));
     nextButton.setBounds(btnRow.reduced(4, 0));
 }
@@ -237,4 +244,14 @@ void TransportPanel::stopClicked()
     playButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF226644));
     repaint();
     if (onStop) onStop();
+}
+
+void TransportPanel::setPaused(bool isPaused)
+{
+    paused = isPaused;
+    pauseButton.setButtonText(paused
+        ? juce::String::fromUTF8("\xe2\x96\xb6") + "  RESUME"
+        : juce::String::fromUTF8("\xe2\x9d\x9a") + "  PAUSE");
+    pauseButton.setColour(juce::TextButton::buttonColourId,
+                          paused ? juce::Colour(0xFF338866) : juce::Colour(0xFF665522));
 }

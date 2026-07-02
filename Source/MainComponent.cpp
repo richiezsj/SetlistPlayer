@@ -29,6 +29,7 @@ MainComponent::MainComponent()
     transportPanel = std::make_unique<TransportPanel>(metronome, audioPlayer);
     transportPanel->onPlay     = [this] { onPlayTriggered(); };
     transportPanel->onStop     = [this] { onStopTriggered(); };
+    transportPanel->onPauseResume = [this] { onPauseToggled(); };
     transportPanel->onNextSong = [this] { onNextSong(); };
     addAndMakeVisible(*transportPanel);
 
@@ -442,6 +443,10 @@ void MainComponent::onPlayTriggered()
     Song* song = setlistPanel->getSelectedSong();
     if (song == nullptr) return;
 
+    // A fresh Play always starts from the top, clearing any paused state.
+    paused = false;
+    if (transportPanel) transportPanel->setPaused(false);
+
     metronome.setBpm(song->bpm);
     metronome.setTimeSignature(song->beatsPerBar, song->beatUnit);
     metronome.start();
@@ -456,6 +461,34 @@ void MainComponent::onStopTriggered()
     metronome.stop();
     metronome.reset();
     audioPlayer.stop();
+
+    if (paused)
+    {
+        paused = false;
+        if (transportPanel) transportPanel->setPaused(false);
+    }
+}
+
+void MainComponent::onPauseToggled()
+{
+    if (!paused)
+    {
+        // Nothing to pause unless the metronome (and thus playback) is running.
+        if (!metronome.isPlaying()) return;
+
+        baseWasPlayingAtPause = audioPlayer.isPlaying();
+        metronome.pause();
+        audioPlayer.pause();
+        paused = true;
+    }
+    else
+    {
+        metronome.resume();
+        if (baseWasPlayingAtPause) audioPlayer.resume();
+        paused = false;
+    }
+
+    if (transportPanel) transportPanel->setPaused(paused);
 }
 
 void MainComponent::parentHierarchyChanged()

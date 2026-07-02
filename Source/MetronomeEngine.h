@@ -20,6 +20,8 @@ public:
     void start();
     void stop();
     void reset();
+    void pause();    // stop clicking but keep beat/bar position
+    void resume();   // continue from the paused position
     bool isPlaying() const { return playing; }
 
     // Mix

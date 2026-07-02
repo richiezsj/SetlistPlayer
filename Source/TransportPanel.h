@@ -286,7 +286,11 @@ public:
 
     std::function<void()> onPlay;
     std::function<void()> onStop;
+    std::function<void()> onPauseResume;
     std::function<void()> onNextSong;
+
+    // Reflect paused state in the Pause/Resume button.
+    void setPaused(bool isPaused);
 
     ChannelStrip audioStrip { juce::Colour(0xFF4488FF), "AUDIO" };
     ChannelStrip metroStrip { juce::Colour(0xFFFF9944), "CLICK" };
@@ -304,7 +308,8 @@ private:
     const Song* currentSong = nullptr;
     bool playing = false;
 
-    juce::TextButton playButton, stopButton, nextButton;
+    juce::TextButton playButton, pauseButton, stopButton, nextButton;
+    bool paused = false;
     juce::Label      songNameLabel, bpmDisplayLabel, positionLabel, statusLabel;
 
     int currentBeat = 0;

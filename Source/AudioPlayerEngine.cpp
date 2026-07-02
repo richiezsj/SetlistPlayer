@@ -110,6 +110,15 @@ void AudioPlayerEngine::pause()
     transportSource.stop();
 }
 
+void AudioPlayerEngine::resume()
+{
+    if (fileLoaded)
+    {
+        finishedNotified = false;
+        transportSource.start();   // keep the current position
+    }
+}
+
 bool AudioPlayerEngine::isPlaying() const
 {
     return transportSource.isPlaying();

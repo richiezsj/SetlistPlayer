@@ -18,6 +18,7 @@ public:
     void play();
     void stop();
     void pause();
+    void resume();   // continue from the current position (no rewind)
     bool isPlaying() const;
     bool isFileLoaded() const { return fileLoaded; }
 

@@ -104,7 +104,7 @@ Legenda: ✅ implementato · 🟡 parziale/limitato · ⬜ non presente
 - ✅ Riproduzione stereo WAV / AIFF / MP3 / FLAC
 - ✅ Gain, pan equal-power, mute indipendenti
 - ✅ Indicatore posizione `m:ss / m:ss`
-- 🟡 Pausa/ripresa — `pause()` esiste ma `play()` riparte sempre da 0 (nessun resume)
+- ✅ Pausa/ripresa — pulsante **Pause/Resume** nel transport: mette in pausa base + metronomo conservando posizione e beat, e riprende allineato (`AudioPlayerEngine::resume()`, `MetronomeEngine::pause()/resume()`); Play resta "riparti da capo"
 - ⬜ Seek / barra di scorrimento / waveform
 - ✅ Auto-avanzamento a fine traccia — a fine base la selezione passa al brano successivo (senza auto-play; il musicista preme Play/Spazio). Notifica sparata una sola volta (latch) e postata sul message thread
 
@@ -174,7 +174,7 @@ Ordinati per priorità.
 9. ~~**Persistere il mix e le impostazioni MIDI**~~ → **Fatto.** Volume/pan/mute di Base e Click, count-in e le impostazioni MIDI (modalità, device, canale, note) sono salvati in un `PropertiesFile` globale (`ApplicationProperties`) e ripristinati all'avvio. Il device viene risolto per `identifier` (fallback sul nome); se non è più presente si ricade sul click interno.
 10. ~~**Path audio relativi**~~ → **Fatto.** Salvato `audioFileRelative` (relativo alla cartella del `.setlist`) accanto al path assoluto di fallback; in apertura si risolve il relativo e, se manca, si ricade sull'assoluto. `Project::missingAudioFiles()` + avviso all'apertura per i brani con base non trovata.
 11. ~~**Drag-and-drop reale**~~ → **Fatto.** Trascinando una riga la scaletta si riordina davvero (`SongListBox` come `DragAndDropTarget`, indice via `getInsertionIndexForPosition` con correzione dello shift). I pulsanti ▲/▼ restano disponibili.
-12. **Resume della base** — `play()` non dovrebbe forzare `setPosition(0)` se si vuole vera pausa.
+12. ~~**Resume della base**~~ → **Fatto.** Aggiunto un pulsante **Pause/Resume** nel transport. La pausa ferma base e metronomo conservando posizione e beat/bar; il resume li fa ripartire allineati (`AudioPlayerEngine::resume()` senza rewind, `MetronomeEngine::pause()/resume()` senza azzerare i contatori). Gestiti i casi limite: pausa durante il count-in (la base parte solo a count-in concluso), stop/next durante la pausa, `allNotesOff` per non lasciare note MIDI appese. Play continua a ripartire dall'inizio.
 13. ~~**Pulizia dead code**~~ → **Fatto.** Rimosse le dichiarazioni inutilizzate `MetronomeEngine::generateClick` / `generateMidiBeat` (la sintesi è inline in `getNextAudioBlock`).
 14. **Export PDF** della scaletta (roadmap README) — ancora da fare.
     - ~~Campi **note** e **tonalità** per brano~~ → **Fatto.** `Song::key` e `Song::notes` (persistiti nel `.setlist`), con campi Key (una riga) e Notes (multi-riga) nel Song Editor.
@@ -202,5 +202,6 @@ Ordinati per priorità.
 | 2026-07-02 | Risolto fix #7 (priorità media): count-in di 0/1/2/4 battute prima dell'avvio della base |
 | 2026-07-02 | Priorità bassa: #13 dead code, #10 path relativi + file mancanti, #11 drag-and-drop reale, #14a note/tonalità per brano, #9 (parziale) persistenza mix+count-in |
 | 2026-07-02 | Completato #9: aggiunta anche la persistenza delle impostazioni MIDI (modalità/device/canale/note) con fallback sul click interno |
+| 2026-07-02 | Risolto #12: pulsante Pause/Resume con pausa/ripresa allineata di base e metronomo |
 </content>
 </invoke>
