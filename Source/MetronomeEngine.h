@@ -55,9 +55,6 @@ public:
     std::function<void()> onCountInFinished;
 
 private:
-    void generateClick(juce::AudioBuffer<float>& buffer, int sample, bool isDownBeat);
-    void generateMidiBeat(juce::MidiBuffer& midi, int sampleOffset, bool isDownBeat);
-
     // Lock-free hand-off of MIDI events from the audio thread to the timer
     // thread, which owns the actual (blocking) device I/O.
     struct MidiFifoEvent { juce::uint8 status, data1, data2; };
