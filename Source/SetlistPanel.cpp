@@ -23,11 +23,9 @@ SetlistPanel::SetlistPanel()
     removeButton.onClick = [this] { removeSong(); };
     addAndMakeVisible(removeButton);
 
-    moveUpButton.setButtonText(juce::String::fromUTF8("\xe2\x96\xb2"));  // ▲
     moveUpButton.onClick = [this] { moveSongUp(); };
     addAndMakeVisible(moveUpButton);
 
-    moveDownButton.setButtonText(juce::String::fromUTF8("\xe2\x96\xbc")); // ▼
     moveDownButton.onClick = [this] { moveSongDown(); };
     addAndMakeVisible(moveDownButton);
 }

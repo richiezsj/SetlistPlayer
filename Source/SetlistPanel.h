@@ -54,11 +54,49 @@ private:
         }
     };
 
+    // Reorder button drawn as a chevron so up/down are perfectly symmetric
+    // (the ▲/▼ glyphs render at slightly different sizes in the system font).
+    struct ChevronButton : public juce::Button
+    {
+        bool pointingUp;
+        explicit ChevronButton(bool up) : juce::Button({}), pointingUp(up) {}
+
+        void paintButton(juce::Graphics& g, bool over, bool down) override
+        {
+            auto r = getLocalBounds().toFloat().reduced(0.5f);
+            auto bg = Theme::controlBg;
+            if (down)      bg = bg.darker(0.18f);
+            else if (over) bg = bg.brighter(0.08f);
+            g.setColour(bg);
+            g.fillRoundedRectangle(r, Theme::radius);
+
+            const auto c = r.getCentre();
+            const float hw = 4.5f, hh = 2.6f;
+            juce::Path p;
+            if (pointingUp)
+            {
+                p.startNewSubPath(c.x - hw, c.y + hh);
+                p.lineTo(c.x, c.y - hh);
+                p.lineTo(c.x + hw, c.y + hh);
+            }
+            else
+            {
+                p.startNewSubPath(c.x - hw, c.y - hh);
+                p.lineTo(c.x, c.y + hh);
+                p.lineTo(c.x + hw, c.y - hh);
+            }
+            g.setColour(isEnabled() ? Theme::textPrimary : Theme::textTertiary);
+            g.strokePath(p, juce::PathStrokeType(1.8f, juce::PathStrokeType::curved,
+                                                 juce::PathStrokeType::rounded));
+        }
+    };
+
     Project* project = nullptr;
 
     juce::Label titleLabel;
     SongListBox listBox;
-    juce::TextButton addButton, removeButton, moveUpButton, moveDownButton;
+    juce::TextButton addButton, removeButton;
+    ChevronButton   moveUpButton { true }, moveDownButton { false };
 
     void addSong();
     void removeSong();
