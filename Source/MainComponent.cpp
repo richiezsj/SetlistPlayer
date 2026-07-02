@@ -283,6 +283,17 @@ void MainComponent::cmdOpenProject()
                 editorPanel->clearSong();
                 transportPanel->clearSong();
                 updateTitle();
+
+                // Warn if any referenced audio file is missing on disk.
+                auto missing = project.missingAudioFiles();
+                if (! missing.isEmpty())
+                    juce::NativeMessageBox::showMessageBoxAsync(
+                        juce::MessageBoxIconType::WarningIcon,
+                        "Missing audio files",
+                        "The backing track could not be found for:\n\n  "
+                            + missing.joinIntoString("\n  ")
+                            + "\n\nThose songs will play without audio until relinked.",
+                        this);
             }
         });
 }

@@ -59,7 +59,7 @@ SetlistProject (projectName)
  └── Song (...)
 ```
 
-I percorsi audio sono salvati come **path assoluti** (vedi §6, limitazione nota).
+I percorsi audio sono salvati come **path relativi** alla cartella del `.setlist` (`audioFileRelative`), con il path assoluto conservato come fallback; all'apertura i brani con base mancante vengono segnalati.
 
 ### Threading
 
@@ -171,10 +171,10 @@ Ordinati per priorità.
 
 ### Priorità bassa — funzionalità / pulizia
 9. **Persistere il mix** (volume/pan/mute) e le impostazioni MIDI nel progetto o in `PropertiesFile`.
-10. **Path audio relativi** al file `.setlist` + segnalazione file mancante all'apertura.
+10. ~~**Path audio relativi**~~ → **Fatto.** Salvato `audioFileRelative` (relativo alla cartella del `.setlist`) accanto al path assoluto di fallback; in apertura si risolve il relativo e, se manca, si ricade sull'assoluto. `Project::missingAudioFiles()` + avviso all'apertura per i brani con base non trovata.
 11. **Drag-and-drop reale** nella scaletta (o rimuovere `getDragSourceDescription` e aggiornare il README).
 12. **Resume della base** — `play()` non dovrebbe forzare `setPosition(0)` se si vuole vera pausa.
-13. **Pulizia dead code** — `MetronomeEngine::generateClick` / `generateMidiBeat` sono dichiarati ma non usati (la sintesi è inline in `getNextAudioBlock`).
+13. ~~**Pulizia dead code**~~ → **Fatto.** Rimosse le dichiarazioni inutilizzate `MetronomeEngine::generateClick` / `generateMidiBeat` (la sintesi è inline in `getNextAudioBlock`).
 14. Campi **note** e **tonalità** per brano; **export PDF** della scaletta (roadmap README).
 
 ---
