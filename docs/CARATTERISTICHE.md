@@ -113,7 +113,7 @@ Legenda: ✅ implementato · 🟡 parziale/limitato · ⬜ non presente
 - ✅ Range BPM 20–300, metro con numeratore 1–12
 - ✅ Gain / pan / mute dedicati
 - ✅ Callback `onBeat` per i LED dei movimenti
-- 🟡 Il **denominatore del metro è ignorato** nel timing: la durata del beat è sempre 1/4 (`60/bpm`), quindi 6/8, 3/8 ecc. non hanno il feel corretto
+- ✅ Il **denominatore del metro è rispettato** nel timing: `samplesPerBeat = (60/bpm)·sr·(4/beatUnit)`, quindi 6/8, 3/8, 6/4 hanno il feel corretto
 - ⬜ Count-in / pre-roll
 
 ### Uscita MIDI
@@ -162,8 +162,8 @@ Ordinati per priorità.
 2. ~~**Parametri condivisi non atomici**~~ → **Fatto.** `bpm`, `numerator`, `denominator`, `gain`, `pan`, `muted`, `useMidi`, `useInternal`, note/canale MIDI (metronomo) e `fileLoaded`, `gain`, `pan`, `muted` (player) sono ora `std::atomic`.
 3. ~~**Prompt salvataggio mancante su Apri e su Uscita**~~ → **Fatto.** Helper `MainComponent::canDiscardCurrentProject()` usato da Nuovo, Apri e Uscita (anche chiusura finestra e ⌘Q). Corretta anche l'inversione Sì/No/Annulla del prompt originale.
 
-### Priorità media — comportamento musicale
-4. **Denominatore del metro nel timing** — usare `samplesPerBeat = (60/bpm) * sr * (4.0/beatUnit)` (o gestione esplicita dei tempi composti) così 6/8, 3/8 ecc. suonano corretti.
+### ✅ Priorità media — comportamento musicale (parziale)
+4. ~~**Denominatore del metro nel timing**~~ → **Fatto.** `samplesPerBeat = (60/bpm)·sr·(4/denominator)`; il BPM resta riferito alla semiminima e i tempi come 6/8, 3/8, 6/4 hanno la durata corretta. Il denominatore è protetto (`jmax(1, den)`) contro la divisione per zero sull'audio thread.
 5. **MIDI RT-safe** — accodare i messaggi in un `MidiBuffer` e inviarli fuori dal thread audio (o via `MidiOutput::sendBlockOfMessages`); aggiungere `noteOff`.
 6. **VU meter — doppio gain** — l'RMS calcolato dal `MixerSource` è già post-gain (gli engine applicano il gain nel blocco), ma `ChannelStrip::pushLevel` lo rimoltiplica per il valore del fader → il meter sovrastima. Scegliere un solo punto di applicazione.
 7. **Count-in / pre-roll** — battute di preparazione prima dell'avvio della base (già in roadmap README).
@@ -193,5 +193,6 @@ Ordinati per priorità.
 |---|---|
 | 2026-07-02 | Prima stesura: stato caratteristiche + backlog miglioramenti |
 | 2026-07-02 | Risolti i 3 fix ad alta priorità: thread-safety device MIDI, parametri condivisi atomici, prompt di salvataggio su Apri/Uscita |
+| 2026-07-02 | Risolto fix #4 (priorità media): il denominatore del metro è ora rispettato nel timing del beat |
 </content>
 </invoke>

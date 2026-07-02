@@ -6,7 +6,9 @@ MetronomeEngine::~MetronomeEngine() { stop(); }
 void MetronomeEngine::prepareToPlay(int /*samplesPerBlockExpected*/, double sr)
 {
     sampleRate = sr;
-    samplesPerBeat = (60.0 / bpm) * sampleRate;
+    // BPM refers to the quarter note; scale by 4/denominator so the beat unit
+    // (e.g. the eighth in 6/8) has the correct duration.
+    samplesPerBeat = (60.0 / bpm) * sampleRate * (4.0 / denominator);
     clickSamplesHi = (int)(0.025 * sampleRate);
     clickSamplesLo = (int)(0.018 * sampleRate);
 }
@@ -29,8 +31,8 @@ void MetronomeEngine::setMidiOutputDevice(std::unique_ptr<juce::MidiOutput> devi
 
 void MetronomeEngine::setTimeSignature(int num, int den)
 {
-    numerator   = num;
-    denominator = den;
+    numerator   = juce::jmax(1, num);
+    denominator = juce::jmax(1, den);   // guard the 4/denominator division on the audio thread
 }
 
 void MetronomeEngine::start()
@@ -71,7 +73,9 @@ void MetronomeEngine::getNextAudioBlock(const juce::AudioSourceChannelInfo& info
     for (int ch = 0; ch < buffer->getNumChannels(); ++ch)
         buffer->clear(ch, startSample, numSamples);
 
-    samplesPerBeat = (60.0 / bpm) * sampleRate;
+    // Recompute each block: BPM is the quarter-note rate, scaled by
+    // 4/denominator so the beat unit matches the time signature (6/8, 3/8, ...).
+    samplesPerBeat = (60.0 / bpm.load()) * sampleRate * (4.0 / denominator.load());
 
     for (int i = 0; i < numSamples; ++i)
     {
