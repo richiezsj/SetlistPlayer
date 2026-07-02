@@ -165,7 +165,7 @@ Ordinati per priorità.
 ### ✅ Priorità media — comportamento musicale (parziale)
 4. ~~**Denominatore del metro nel timing**~~ → **Fatto.** `samplesPerBeat = (60/bpm)·sr·(4/denominator)`; il BPM resta riferito alla semiminima e i tempi come 6/8, 3/8, 6/4 hanno la durata corretta. Il denominatore è protetto (`jmax(1, den)`) contro la divisione per zero sull'audio thread.
 5. **MIDI RT-safe** — accodare i messaggi in un `MidiBuffer` e inviarli fuori dal thread audio (o via `MidiOutput::sendBlockOfMessages`); aggiungere `noteOff`.
-6. **VU meter — doppio gain** — l'RMS calcolato dal `MixerSource` è già post-gain (gli engine applicano il gain nel blocco), ma `ChannelStrip::pushLevel` lo rimoltiplica per il valore del fader → il meter sovrastima. Scegliere un solo punto di applicazione.
+6. ~~**VU meter — doppio gain**~~ → **Fatto.** `ChannelStrip::pushLevel` non rimoltiplica più per il fader: l'RMS del `MixerSource` è già post-gain, quindi il meter riflette l'uscita reale. Rimosso anche l'accesso non thread-safe allo `Slider` dal thread audio.
 7. **Count-in / pre-roll** — battute di preparazione prima dell'avvio della base (già in roadmap README).
 8. **Auto-avanzamento** — collegare `AudioPlayerEngine::onPlaybackFinished` per passare al brano successivo a fine base.
 
@@ -194,5 +194,6 @@ Ordinati per priorità.
 | 2026-07-02 | Prima stesura: stato caratteristiche + backlog miglioramenti |
 | 2026-07-02 | Risolti i 3 fix ad alta priorità: thread-safety device MIDI, parametri condivisi atomici, prompt di salvataggio su Apri/Uscita |
 | 2026-07-02 | Risolto fix #4 (priorità media): il denominatore del metro è ora rispettato nel timing del beat |
+| 2026-07-02 | Risolto fix #6 (priorità media): rimosso il doppio gain sul VU meter (e la lettura dello Slider dal thread audio) |
 </content>
 </invoke>

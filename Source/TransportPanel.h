@@ -182,9 +182,11 @@ public:
     // Called from audio thread (lock-free via VuMeter atomic)
     void pushLevel(float rmsLinear)
     {
-        // Scale by current fader value so the meter reflects actual output
-        float scaled = rmsLinear * (float)volSlider.getValue();
-        vuMeter.pushLevel(scaled);
+        // rmsLinear is already post-gain: the engine applies the fader gain
+        // inside its own block, and the RMS is measured on that output. Do NOT
+        // multiply by the fader again here (double gain), and it also avoids
+        // reading the Slider from the audio thread.
+        vuMeter.pushLevel(rmsLinear);
     }
 
     ChannelStrip(juce::Colour accent, const juce::String& label)
