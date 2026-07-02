@@ -47,6 +47,30 @@ SongEditorPanel::SongEditorPanel()
     tsDenominator.setColour(juce::ComboBox::backgroundColourId, juce::Colour(0xFF2A2A3A));
     addAndMakeVisible(tsDenominator);
 
+    keyLabel.setText("Key:", juce::dontSendNotification);
+    keyLabel.setFont(juce::Font(12.0f));
+    addAndMakeVisible(keyLabel);
+
+    keyEditor.setMultiLine(false);
+    keyEditor.setReturnKeyStartsNewLine(false);
+    keyEditor.onTextChange = [this] { keyChanged(); };
+    keyEditor.setColour(juce::TextEditor::backgroundColourId, juce::Colour(0xFF2A2A3A));
+    keyEditor.setColour(juce::TextEditor::textColourId, juce::Colours::white);
+    keyEditor.setColour(juce::TextEditor::outlineColourId, juce::Colour(0xFF445566));
+    addAndMakeVisible(keyEditor);
+
+    notesLabel.setText("Notes:", juce::dontSendNotification);
+    notesLabel.setFont(juce::Font(12.0f));
+    addAndMakeVisible(notesLabel);
+
+    notesEditor.setMultiLine(true);
+    notesEditor.setReturnKeyStartsNewLine(true);
+    notesEditor.onTextChange = [this] { notesChanged(); };
+    notesEditor.setColour(juce::TextEditor::backgroundColourId, juce::Colour(0xFF2A2A3A));
+    notesEditor.setColour(juce::TextEditor::textColourId, juce::Colours::white);
+    notesEditor.setColour(juce::TextEditor::outlineColourId, juce::Colour(0xFF445566));
+    addAndMakeVisible(notesEditor);
+
     audioLabel.setText("Audio Track:", juce::dontSendNotification);
     audioLabel.setFont(juce::Font(12.0f));
     addAndMakeVisible(audioLabel);
@@ -107,12 +131,24 @@ void SongEditorPanel::resized()
     tsDenominator.setBounds(tsRow.removeFromLeft(80));
     area.removeFromTop(gap);
 
-    audioLabel.setBounds(area.removeFromTop(16));
-    auto audioRow = area.removeFromTop(row);
-    loadAudioButton.setBounds(audioRow.removeFromLeft(100));
-    audioRow.removeFromLeft(gap);
-    clearAudioButton.setBounds(audioRow.removeFromLeft(60));
-    audioFileLabel.setBounds(area.removeFromTop(24));
+    keyLabel.setBounds(area.removeFromTop(16));
+    keyEditor.setBounds(area.removeFromTop(row).removeFromLeft(120));
+    area.removeFromTop(gap);
+
+    // Audio controls sit at the bottom; Notes fills the space in between.
+    auto audioFileArea = area.removeFromBottom(24);
+    auto audioRowArea  = area.removeFromBottom(row);
+    auto audioLabelArea = area.removeFromBottom(16);
+    area.removeFromBottom(gap);
+
+    notesLabel.setBounds(area.removeFromTop(16));
+    notesEditor.setBounds(area);   // remaining space
+
+    audioLabel.setBounds(audioLabelArea);
+    loadAudioButton.setBounds(audioRowArea.removeFromLeft(100));
+    audioRowArea.removeFromLeft(gap);
+    clearAudioButton.setBounds(audioRowArea.removeFromLeft(60));
+    audioFileLabel.setBounds(audioFileArea);
 }
 
 void SongEditorPanel::loadSong(Project* proj, int index)
@@ -124,25 +160,31 @@ void SongEditorPanel::loadSong(Project* proj, int index)
     if (s == nullptr) { clearSong(); return; }
 
     // Silence callbacks while populating to avoid spurious writes
-    nameEditor.onTextChange = nullptr;
-    bpmSlider.onValueChange = nullptr;
-    tsNumerator.onChange    = nullptr;
-    tsDenominator.onChange  = nullptr;
+    nameEditor.onTextChange  = nullptr;
+    bpmSlider.onValueChange  = nullptr;
+    tsNumerator.onChange     = nullptr;
+    tsDenominator.onChange   = nullptr;
+    keyEditor.onTextChange   = nullptr;
+    notesEditor.onTextChange = nullptr;
 
     nameEditor.setText(s->name, juce::dontSendNotification);
     bpmSlider.setValue(s->bpm,  juce::dontSendNotification);
     tsNumerator.setSelectedId(s->beatsPerBar, juce::dontSendNotification);
     tsDenominator.setSelectedId(s->beatUnit,  juce::dontSendNotification);
+    keyEditor.setText(s->key,     juce::dontSendNotification);
+    notesEditor.setText(s->notes, juce::dontSendNotification);
     audioFileLabel.setText(s->audioFile.existsAsFile()
                                ? s->audioFile.getFileName()
                                : "No file loaded",
                            juce::dontSendNotification);
 
     // Re-wire callbacks
-    nameEditor.onTextChange = [this] { nameChanged(); };
-    bpmSlider.onValueChange = [this] { bpmChanged(); };
-    tsNumerator.onChange    = [this] { tsChanged(); };
-    tsDenominator.onChange  = [this] { tsChanged(); };
+    nameEditor.onTextChange  = [this] { nameChanged(); };
+    bpmSlider.onValueChange  = [this] { bpmChanged(); };
+    tsNumerator.onChange     = [this] { tsChanged(); };
+    tsDenominator.onChange   = [this] { tsChanged(); };
+    keyEditor.onTextChange   = [this] { keyChanged(); };
+    notesEditor.onTextChange = [this] { notesChanged(); };
 
     setEnabled(true);
 }
@@ -152,21 +194,27 @@ void SongEditorPanel::clearSong()
     currentProject = nullptr;
     currentIndex   = -1;
 
-    nameEditor.onTextChange = nullptr;
-    bpmSlider.onValueChange = nullptr;
-    tsNumerator.onChange    = nullptr;
-    tsDenominator.onChange  = nullptr;
+    nameEditor.onTextChange  = nullptr;
+    bpmSlider.onValueChange  = nullptr;
+    tsNumerator.onChange     = nullptr;
+    tsDenominator.onChange   = nullptr;
+    keyEditor.onTextChange   = nullptr;
+    notesEditor.onTextChange = nullptr;
 
     nameEditor.setText("",    juce::dontSendNotification);
     bpmSlider.setValue(120.0, juce::dontSendNotification);
     tsNumerator.setSelectedId(4,   juce::dontSendNotification);
     tsDenominator.setSelectedId(4, juce::dontSendNotification);
+    keyEditor.setText("",   juce::dontSendNotification);
+    notesEditor.setText("", juce::dontSendNotification);
     audioFileLabel.setText("Select a song to edit", juce::dontSendNotification);
 
-    nameEditor.onTextChange = [this] { nameChanged(); };
-    bpmSlider.onValueChange = [this] { bpmChanged(); };
-    tsNumerator.onChange    = [this] { tsChanged(); };
-    tsDenominator.onChange  = [this] { tsChanged(); };
+    nameEditor.onTextChange  = [this] { nameChanged(); };
+    bpmSlider.onValueChange  = [this] { bpmChanged(); };
+    tsNumerator.onChange     = [this] { tsChanged(); };
+    tsDenominator.onChange   = [this] { tsChanged(); };
+    keyEditor.onTextChange   = [this] { keyChanged(); };
+    notesEditor.onTextChange = [this] { notesChanged(); };
 
     setEnabled(false);
 }
@@ -230,5 +278,21 @@ void SongEditorPanel::tsChanged()
     if (s == nullptr) return;
     s->beatsPerBar = tsNumerator.getSelectedId();
     s->beatUnit    = tsDenominator.getSelectedId();
+    if (onSongChanged) onSongChanged();
+}
+
+void SongEditorPanel::keyChanged()
+{
+    auto* s = song();
+    if (s == nullptr) return;
+    s->key = keyEditor.getText();
+    if (onSongChanged) onSongChanged();
+}
+
+void SongEditorPanel::notesChanged()
+{
+    auto* s = song();
+    if (s == nullptr) return;
+    s->notes = notesEditor.getText();
     if (onSongChanged) onSongChanged();
 }

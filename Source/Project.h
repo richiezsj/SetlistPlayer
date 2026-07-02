@@ -7,6 +7,8 @@ struct Song
     double bpm               = 120.0;
     int beatsPerBar          = 4;
     int beatUnit             = 4;
+    juce::String key;                 // musical key, e.g. "Am", "F#" (free text)
+    juce::String notes;               // performance notes for the song
     juce::File audioFile;
     juce::String audioFilePath;
 
@@ -20,6 +22,8 @@ struct Song
         tree.setProperty("bpm",           bpm,           nullptr);
         tree.setProperty("beatsPerBar",   beatsPerBar,   nullptr);
         tree.setProperty("beatUnit",      beatUnit,      nullptr);
+        tree.setProperty("key",           key,           nullptr);
+        tree.setProperty("notes",         notes,         nullptr);
         tree.setProperty("audioFilePath", audioFilePath, nullptr);
 
         if (audioFile != juce::File() && projectDir != juce::File())
@@ -35,6 +39,8 @@ struct Song
         s.bpm           = tree.getProperty("bpm",           120.0);
         s.beatsPerBar   = tree.getProperty("beatsPerBar",   4);
         s.beatUnit      = tree.getProperty("beatUnit",      4);
+        s.key           = tree.getProperty("key",           "").toString();
+        s.notes         = tree.getProperty("notes",         "").toString();
         s.audioFilePath = tree.getProperty("audioFilePath", "").toString();
 
         // Prefer the path relative to the project; fall back to the stored

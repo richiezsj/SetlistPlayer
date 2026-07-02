@@ -175,7 +175,8 @@ Ordinati per priorità.
 11. ~~**Drag-and-drop reale**~~ → **Fatto.** Trascinando una riga la scaletta si riordina davvero (`SongListBox` come `DragAndDropTarget`, indice via `getInsertionIndexForPosition` con correzione dello shift). I pulsanti ▲/▼ restano disponibili.
 12. **Resume della base** — `play()` non dovrebbe forzare `setPosition(0)` se si vuole vera pausa.
 13. ~~**Pulizia dead code**~~ → **Fatto.** Rimosse le dichiarazioni inutilizzate `MetronomeEngine::generateClick` / `generateMidiBeat` (la sintesi è inline in `getNextAudioBlock`).
-14. Campi **note** e **tonalità** per brano; **export PDF** della scaletta (roadmap README).
+14. **Export PDF** della scaletta (roadmap README) — ancora da fare.
+    - ~~Campi **note** e **tonalità** per brano~~ → **Fatto.** `Song::key` e `Song::notes` (persistiti nel `.setlist`), con campi Key (una riga) e Notes (multi-riga) nel Song Editor.
 
 ---
 

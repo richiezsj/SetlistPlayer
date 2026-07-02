@@ -31,8 +31,8 @@ private:
     }
 
     juce::Label titleLabel;
-    juce::Label nameLabel, bpmLabel, tsLabel, audioLabel;
-    juce::TextEditor nameEditor;
+    juce::Label nameLabel, bpmLabel, tsLabel, keyLabel, notesLabel, audioLabel;
+    juce::TextEditor nameEditor, keyEditor, notesEditor;
     juce::Slider bpmSlider;
     juce::TextButton loadAudioButton, clearAudioButton;
     juce::Label audioFileLabel;
@@ -44,6 +44,8 @@ private:
     void loadAudioClicked();
     void clearAudioClicked();
     void tsChanged();
+    void keyChanged();
+    void notesChanged();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SongEditorPanel)
 };
