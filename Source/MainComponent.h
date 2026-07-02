@@ -63,6 +63,13 @@ private:
     void onNextSong();
     void updateTitle();
 
+    // Persist the mix (per-channel gain/pan/mute) and count-in across runs, in
+    // a global settings file (not per-project). MIDI device/mode is not stored
+    // because device availability varies between launches.
+    void loadSettings();
+    void saveSettings();
+    juce::ApplicationProperties appProperties;
+
     // Forwards space key events from the top-level window back here,
     // so space works even when a child (slider, button...) has focus
     struct SpaceKeyListener : public juce::KeyListener

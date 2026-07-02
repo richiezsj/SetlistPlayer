@@ -82,10 +82,15 @@ MainComponent::MainComponent()
     {
         transportPanel->metroStrip.pushLevel(rms);
     };
+
+    // Restore persisted mix / count-in (after all UI exists).
+    loadSettings();
 }
 
 MainComponent::~MainComponent()
 {
+    saveSettings();
+
     // Clear level callbacks before audio thread is stopped
     mixerSource.onLevelAudio = nullptr;
     mixerSource.onLevelMetro = nullptr;
@@ -224,6 +229,51 @@ bool MainComponent::perform(const juce::ApplicationCommandTarget::InvocationInfo
             return true;
         default: return false;
     }
+}
+
+// ============================================================
+// Persistent settings (mix + count-in), global across projects
+// ============================================================
+void MainComponent::loadSettings()
+{
+    juce::PropertiesFile::Options opts;
+    opts.applicationName     = "SetlistPlayer";
+    opts.filenameSuffix      = "settings";
+    opts.osxLibrarySubFolder = "Application Support";
+    appProperties.setStorageParameters(opts);
+
+    auto* p = appProperties.getUserSettings();
+    if (p == nullptr) return;
+
+    // Apply through the (public) channel controls with notification so both the
+    // UI and the engines pick up the restored values.
+    auto& a = transportPanel->audioStrip;
+    a.volSlider.setValue (p->getDoubleValue("baseGain", 1.0), juce::sendNotificationSync);
+    a.panKnob.setValue   (p->getDoubleValue("basePan",  0.0), juce::sendNotificationSync);
+    a.muteButton.setToggleState(p->getBoolValue("baseMute", false), juce::sendNotificationSync);
+
+    auto& m = transportPanel->metroStrip;
+    m.volSlider.setValue (p->getDoubleValue("clickGain", 1.0), juce::sendNotificationSync);
+    m.panKnob.setValue   (p->getDoubleValue("clickPan",  0.0), juce::sendNotificationSync);
+    m.muteButton.setToggleState(p->getBoolValue("clickMute", false), juce::sendNotificationSync);
+
+    metronome.setCountInBars(p->getIntValue("countInBars", 0));
+    metronomeOutput.refreshCountIn();
+}
+
+void MainComponent::saveSettings()
+{
+    auto* p = appProperties.getUserSettings();
+    if (p == nullptr) return;
+
+    p->setValue("baseGain",  audioPlayer.getGain());
+    p->setValue("basePan",   audioPlayer.getPan());
+    p->setValue("baseMute",  audioPlayer.isMuted());
+    p->setValue("clickGain", metronome.getGain());
+    p->setValue("clickPan",  metronome.getPan());
+    p->setValue("clickMute", metronome.isMuted());
+    p->setValue("countInBars", metronome.getCountInBars());
+    p->saveIfNeeded();
 }
 
 // ============================================================

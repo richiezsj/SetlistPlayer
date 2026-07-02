@@ -23,6 +23,9 @@ public:
     // Preferred height for the controls, used by the host window layout.
     static constexpr int preferredHeight = 214;
 
+    // Re-sync the count-in selector from the engine (after restoring settings).
+    void refreshCountIn();
+
 private:
     void refreshMidiDevices();
     void applyMidiMode();

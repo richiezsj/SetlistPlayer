@@ -127,6 +127,12 @@ MetronomeOutputPanel::~MetronomeOutputPanel()
     metronome.setMidiOutputDevice(nullptr);
 }
 
+void MetronomeOutputPanel::refreshCountIn()
+{
+    const int bars = metronome.getCountInBars();   // 0/1/2/4 -> id 1/2/3/4
+    countInBox.setSelectedId(bars >= 4 ? 4 : bars + 1, juce::dontSendNotification);
+}
+
 void MetronomeOutputPanel::refreshMidiDevices()
 {
     auto devices = juce::MidiOutput::getAvailableDevices();
