@@ -2,7 +2,8 @@
 #include <atomic>
 #include <JuceHeader.h>
 
-class MetronomeEngine : public juce::AudioSource
+class MetronomeEngine : public juce::AudioSource,
+                        private juce::HighResolutionTimer
 {
 public:
     MetronomeEngine();
@@ -50,6 +51,12 @@ private:
     void generateClick(juce::AudioBuffer<float>& buffer, int sample, bool isDownBeat);
     void generateMidiBeat(juce::MidiBuffer& midi, int sampleOffset, bool isDownBeat);
 
+    // Lock-free hand-off of MIDI events from the audio thread to the timer
+    // thread, which owns the actual (blocking) device I/O.
+    struct MidiFifoEvent { juce::uint8 status, data1, data2; };
+    void pushMidiEvent(juce::uint8 status, juce::uint8 data1, juce::uint8 data2);
+    void hiResTimerCallback() override;   // drains the FIFO on a dedicated thread
+
     double sampleRate     = 44100.0;          // audio-thread owned (set in prepareToPlay)
     std::atomic<double> bpm         { 120.0 };
     std::atomic<int>    numerator   { 4 };
@@ -72,10 +79,21 @@ private:
     std::atomic<bool>  muted { false };
 
     // MIDI output device is owned here so it outlives any UI panel that
-    // configures it. Swapped under midiLock; the audio thread touches it only
-    // via a try-lock, so it never blocks and never dereferences a freed ptr.
+    // configures it. It is touched only by the timer thread (drain) and the
+    // message thread (device swap), both under midiLock — never the audio
+    // thread, which only enqueues into the lock-free FIFO below.
     std::unique_ptr<juce::MidiOutput> midiOutput;
     juce::CriticalSection midiLock;
+
+    // Single-producer (audio thread) / single-consumer (timer thread) FIFO.
+    static constexpr int midiFifoCapacity = 256;
+    juce::AbstractFifo midiFifo { midiFifoCapacity };
+    std::array<MidiFifoEvent, midiFifoCapacity> midiFifoBuffer;
+
+    // Audio-thread only: the note currently sounding, so the next beat can turn
+    // it off (-1 = none). Channel is captured so the note-off matches.
+    int lastMidiNote    = -1;
+    int lastMidiChannel = 10;
 
     // Click synthesis
     float clickDuration = 0.02f; // seconds

@@ -1,7 +1,12 @@
 #include "MetronomeEngine.h"
 
 MetronomeEngine::MetronomeEngine() {}
-MetronomeEngine::~MetronomeEngine() { stop(); }
+
+MetronomeEngine::~MetronomeEngine()
+{
+    stop();
+    stopTimer();   // must stop the drain thread before members are destroyed
+}
 
 void MetronomeEngine::prepareToPlay(int /*samplesPerBlockExpected*/, double sr)
 {
@@ -23,10 +28,18 @@ void MetronomeEngine::setBpm(double newBpm)
 
 void MetronomeEngine::setMidiOutputDevice(std::unique_ptr<juce::MidiOutput> device)
 {
-    // Blocks briefly if the audio thread is mid-send, guaranteeing the old
-    // device is never freed while in use.
-    const juce::ScopedLock sl(midiLock);
-    midiOutput = std::move(device);
+    const bool hasDevice = (device != nullptr);
+    {
+        // Blocks briefly if the timer thread is mid-send, guaranteeing the old
+        // device is never freed while in use.
+        const juce::ScopedLock sl(midiLock);
+        midiOutput = std::move(device);
+    }
+
+    // Run the drain thread only while a device is present. Every 1 ms is well
+    // below one beat and keeps click jitter inaudible.
+    if (hasDevice) startTimer(1);
+    else           stopTimer();
 }
 
 void MetronomeEngine::setTimeSignature(int num, int den)
@@ -41,6 +54,7 @@ void MetronomeEngine::start()
     currentBeat   = 0;
     currentBar    = 0;
     clickCountdown = 0;
+    lastMidiNote   = -1;   // no note is sounding yet
     playing = true;
 }
 
@@ -48,6 +62,12 @@ void MetronomeEngine::stop()
 {
     playing = false;
     clickCountdown = 0;
+
+    // Silence any hanging MIDI note. Called on the message thread, so it is
+    // safe to touch the device directly under the lock.
+    const juce::ScopedLock sl(midiLock);
+    if (midiOutput != nullptr)
+        midiOutput->sendMessageNow(juce::MidiMessage::allNotesOff(midiChannel.load()));
 }
 
 void MetronomeEngine::reset()
@@ -88,17 +108,21 @@ void MetronomeEngine::getNextAudioBlock(const juce::AudioSourceChannelInfo& info
 
             if (useMidi.load())
             {
-                // Try-lock: never blocks the audio thread. If the device is
-                // being swapped on the message thread we simply skip this click.
-                const juce::ScopedTryLock stl(midiLock);
-                if (stl.isLocked() && midiOutput != nullptr)
-                {
-                    juce::uint8 note     = isDown ? (juce::uint8)midiNoteDown.load()
-                                                  : (juce::uint8)midiNoteBeat.load();
-                    juce::uint8 velocity = isDown ? (juce::uint8)100 : (juce::uint8)70;
-                    midiOutput->sendMessageNow(
-                        juce::MidiMessage::noteOn(midiChannel.load(), note, velocity));
-                }
+                // Enqueue only — the timer thread performs the actual device I/O,
+                // so the audio thread never blocks or touches the device.
+                const int ch = midiChannel.load();
+                const juce::uint8 note = isDown ? (juce::uint8)midiNoteDown.load()
+                                                : (juce::uint8)midiNoteBeat.load();
+                const juce::uint8 velocity = isDown ? (juce::uint8)100 : (juce::uint8)70;
+
+                // Turn off the previous note first so held sounds don't stack.
+                if (lastMidiNote >= 0)
+                    pushMidiEvent((juce::uint8)(0x80 | (lastMidiChannel - 1)),
+                                  (juce::uint8)lastMidiNote, 0);
+
+                pushMidiEvent((juce::uint8)(0x90 | (ch - 1)), note, velocity);
+                lastMidiNote    = note;
+                lastMidiChannel = ch;
             }
 
             if (onBeat) onBeat(currentBeat, currentBar);
@@ -145,4 +169,40 @@ void MetronomeEngine::getNextAudioBlock(const juce::AudioSourceChannelInfo& info
             buffer->applyGain(startSample, numSamples, gain);
         }
     }
+}
+
+void MetronomeEngine::pushMidiEvent(juce::uint8 status, juce::uint8 data1, juce::uint8 data2)
+{
+    // Audio thread (producer). Never blocks: if the FIFO is full the event is
+    // dropped rather than stalling the audio callback.
+    int start1, size1, start2, size2;
+    midiFifo.prepareToWrite(1, start1, size1, start2, size2);
+    if (size1 > 0)
+    {
+        midiFifoBuffer[(size_t) start1] = { status, data1, data2 };
+        midiFifo.finishedWrite(1);
+    }
+}
+
+void MetronomeEngine::hiResTimerCallback()
+{
+    // Timer thread (consumer). Holds midiLock so it can't race the device swap.
+    const juce::ScopedLock sl(midiLock);
+
+    int start1, size1, start2, size2;
+    midiFifo.prepareToRead(midiFifo.getNumReady(), start1, size1, start2, size2);
+
+    auto sendRange = [this](int start, int size)
+    {
+        for (int i = 0; i < size; ++i)
+        {
+            const auto& e = midiFifoBuffer[(size_t) (start + i)];
+            if (midiOutput != nullptr)
+                midiOutput->sendMessageNow(juce::MidiMessage(e.status, e.data1, e.data2));
+        }
+    };
+    sendRange(start1, size1);
+    sendRange(start2, size2);
+
+    midiFifo.finishedRead(size1 + size2);
 }

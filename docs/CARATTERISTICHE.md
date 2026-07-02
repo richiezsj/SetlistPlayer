@@ -120,8 +120,8 @@ Legenda: ✅ implementato · 🟡 parziale/limitato · ⬜ non presente
 - ✅ Modalità: click interno / solo MIDI / interno + MIDI
 - ✅ Selezione device, canale (1–16), note downbeat e beat configurabili
 - ✅ Il device MIDI resta aperto anche a finestra Audio Setup chiusa
-- 🟡 `noteOn` inviato senza `noteOff` (ok per percussioni GM one-shot, note appese con suoni tenuti)
-- 🟡 `sendMessageNow` chiamato dal thread audio (non RT-safe, possibile jitter/blocco)
+- ✅ `noteOff` inviato: a ogni beat si spegne la nota precedente e allo stop si manda `allNotesOff` (niente note appese con suoni tenuti)
+- ✅ Invio MIDI RT-safe: l'audio thread accoda in una FIFO lock-free (`AbstractFifo`), un `HighResolutionTimer` (1 ms) drena e invia fuori dal thread audio
 
 ### Transport & UI
 - ✅ BPM grande, LED movimenti con accento, Play / Stop / Next
@@ -164,7 +164,7 @@ Ordinati per priorità.
 
 ### ✅ Priorità media — comportamento musicale (parziale)
 4. ~~**Denominatore del metro nel timing**~~ → **Fatto.** `samplesPerBeat = (60/bpm)·sr·(4/denominator)`; il BPM resta riferito alla semiminima e i tempi come 6/8, 3/8, 6/4 hanno la durata corretta. Il denominatore è protetto (`jmax(1, den)`) contro la divisione per zero sull'audio thread.
-5. **MIDI RT-safe** — accodare i messaggi in un `MidiBuffer` e inviarli fuori dal thread audio (o via `MidiOutput::sendBlockOfMessages`); aggiungere `noteOff`.
+5. ~~**MIDI RT-safe**~~ → **Fatto.** L'audio thread accoda gli eventi in una FIFO lock-free single-producer/single-consumer (`juce::AbstractFifo`); un `HighResolutionTimer` (1 ms) la drena e invia via `sendMessageNow` sotto `midiLock`, fuori dal thread audio (che ora non tocca più né il lock né il device). Aggiunto `noteOff` della nota precedente a ogni beat e `allNotesOff` allo stop.
 6. ~~**VU meter — doppio gain**~~ → **Fatto.** `ChannelStrip::pushLevel` non rimoltiplica più per il fader: l'RMS del `MixerSource` è già post-gain, quindi il meter riflette l'uscita reale. Rimosso anche l'accesso non thread-safe allo `Slider` dal thread audio.
 7. **Count-in / pre-roll** — battute di preparazione prima dell'avvio della base (già in roadmap README).
 8. ~~**Auto-avanzamento**~~ → **Fatto.** `AudioPlayerEngine::onPlaybackFinished` collegato: a fine base la selezione avanza al brano successivo (riusa `onNextSong`, nessun auto-play). La notifica è protetta da un latch (`finishedNotified`) per sparare una sola volta e viene azzerata alla distruzione della UI.
@@ -196,5 +196,6 @@ Ordinati per priorità.
 | 2026-07-02 | Risolto fix #4 (priorità media): il denominatore del metro è ora rispettato nel timing del beat |
 | 2026-07-02 | Risolto fix #6 (priorità media): rimosso il doppio gain sul VU meter (e la lettura dello Slider dal thread audio) |
 | 2026-07-02 | Risolto fix #8 (priorità media): auto-avanzamento al brano successivo a fine base |
+| 2026-07-02 | Risolto fix #5 (priorità media): invio MIDI RT-safe via FIFO lock-free + HighResolutionTimer, con noteOff/allNotesOff |
 </content>
 </invoke>
